@@ -11,6 +11,7 @@ import { UrgencyBadge } from '../components/UrgencyBadge';
 import { EmergencyBanner } from '../components/EmergencyBanner';
 import { HumanReviewModal } from '../components/HumanReviewModal';
 import { DemoCaseSelectorModal } from '../components/DemoCaseSelectorModal';
+import { SYNTHETIC_DEMO_CASES } from '../data/demoCases';
 import {
   BookOpen,
   Trash2,
@@ -82,7 +83,7 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [demoModalOpen, setDemoModalOpen] = useState(false);
-  const [demoCases, setDemoCases] = useState<DemoCase[]>([]);
+  const [demoCases, setDemoCases] = useState<DemoCase[]>(SYNTHETIC_DEMO_CASES);
   const [currentReview, setCurrentReview] = useState<HumanReviewUpdate | null>(null);
 
   // Speech Recognition & Synthesis states
@@ -195,7 +196,13 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
 
   // Load demo cases list on mount
   useEffect(() => {
-    api.getDemoCases().then(setDemoCases).catch(console.error);
+    api.getDemoCases().then((cases) => {
+      if (Array.isArray(cases) && cases.length > 0) {
+        setDemoCases(cases);
+      }
+    }).catch((err) => {
+      console.warn('Backend demo-cases endpoint unavailable, using bundled scenarios:', err);
+    });
   }, []);
 
   const handleSelectDemo = (demo: DemoCase) => {

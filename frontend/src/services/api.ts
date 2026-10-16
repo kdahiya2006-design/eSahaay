@@ -7,6 +7,8 @@ import type {
   DemoCase
 } from '../types';
 
+import { SYNTHETIC_DEMO_CASES } from '../data/demoCases';
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 
 export const api = {
@@ -17,9 +19,18 @@ export const api = {
   },
 
   async getDemoCases(): Promise<DemoCase[]> {
-    const res = await fetch(`${API_BASE_URL}/demo-cases`);
-    if (!res.ok) throw new Error('Failed to fetch demo cases');
-    return res.json();
+    try {
+      const res = await fetch(`${API_BASE_URL}/demo-cases`);
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend /demo-cases unavailable, using embedded demo cases:', err);
+    }
+    return SYNTHETIC_DEMO_CASES;
   },
 
   async analyzeTranscript(data: {
