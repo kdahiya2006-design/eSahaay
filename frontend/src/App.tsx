@@ -7,6 +7,7 @@ import { OverviewPage } from './pages/OverviewPage';
 import { NewIncidentPage } from './pages/NewIncidentPage';
 import { CaseHistoryPage } from './pages/CaseHistoryPage';
 import { EvaluationPage } from './pages/EvaluationPage';
+import { LiveFleetMapPage } from './pages/LiveFleetMapPage';
 import { api } from './services/api';
 import type { StoredCase } from './types';
 
@@ -75,6 +76,10 @@ export const App: React.FC = () => {
         return {
           title: 'Triage Dashboard',
         };
+      case 'dispatch-map':
+        return {
+          title: 'Live Service & Vehicle Dispatch Map',
+        };
       case 'case-history':
         return {
           title: 'Case History',
@@ -122,6 +127,7 @@ export const App: React.FC = () => {
               key={activeCaseForInspection ? activeCaseForInspection.case_id : 'new-form'}
               initialCase={activeCaseForInspection ? activeCaseForInspection.analysis : null}
               initialTranscript={activeCaseForInspection ? activeCaseForInspection.transcript : ''}
+              onNavigateToMap={() => setActiveTab('dispatch-map')}
             />
           )}
 
@@ -132,6 +138,15 @@ export const App: React.FC = () => {
                 setActiveTab('new-incident');
               }}
               onSelectCase={handleSelectCaseFromOverview}
+            />
+          )}
+
+          {activeTab === 'dispatch-map' && (
+            <LiveFleetMapPage
+              onNavigateToNew={() => {
+                setActiveCaseForInspection(null);
+                setActiveTab('new-incident');
+              }}
             />
           )}
 

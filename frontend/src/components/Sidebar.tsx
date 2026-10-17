@@ -6,10 +6,11 @@ import {
   BarChart3,
   HeartHandshake,
   ChevronRight,
+  Map,
   X
 } from 'lucide-react';
 
-export type NavTab = 'overview' | 'new-incident' | 'case-history' | 'evaluation';
+export type NavTab = 'overview' | 'new-incident' | 'case-history' | 'evaluation' | 'dispatch-map';
 
 interface NavSection {
   header: string;
@@ -55,6 +56,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
           id: 'overview',
           label: 'Dashboard',
           icon: <LayoutDashboard className="w-4 h-4" />,
+        },
+        {
+          id: 'dispatch-map',
+          label: 'Dispatch Map',
+          icon: <Map className="w-4 h-4" />,
+          badge: 'Live',
         },
         {
           id: 'case-history',

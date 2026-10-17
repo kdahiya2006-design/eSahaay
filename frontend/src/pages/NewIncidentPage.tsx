@@ -65,11 +65,13 @@ const SPEECH_LANG_MAP: Record<string, string> = {
 interface NewIncidentPageProps {
   initialCase?: IncidentAnalysis | null;
   initialTranscript?: string;
+  onNavigateToMap?: () => void;
 }
 
 export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
   initialCase,
   initialTranscript = '',
+  onNavigateToMap,
 }) => {
   const [transcript, setTranscript] = useState(
     initialTranscript || (initialCase ? '' : SYNTHETIC_DEMO_CASES[0]?.transcript || '')
@@ -669,6 +671,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
         primaryService={emergencyMeasurement.primaryService}
         decisions={emergencyMeasurement.decisions}
         locationHint={analysis?.location?.mentioned_location || locationHint}
+        onOpenLiveMap={onNavigateToMap}
       />
 
       {/* 7. Full Incident Overview & Triage Metadata Bar */}

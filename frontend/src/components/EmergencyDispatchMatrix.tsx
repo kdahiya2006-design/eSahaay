@@ -13,7 +13,8 @@ import {
   AlertTriangle,
   MapPin,
   Navigation,
-  Clock
+  Clock,
+  Map
 } from 'lucide-react';
 import type { DispatchDecision, DispatchServiceType, UrgencyLevel, NearbyEmergencyUnit } from '../types';
 import { ringtoneService } from '../services/ringtoneService';
@@ -26,6 +27,7 @@ export interface EmergencyDispatchMatrixProps {
   decisions: DispatchDecision[];
   locationHint?: string;
   onDispatchUpdate?: (updatedDecisions: DispatchDecision[]) => void;
+  onOpenLiveMap?: () => void;
 }
 
 const SERVICE_ICONS: Record<DispatchServiceType, any> = {
@@ -77,6 +79,7 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
   decisions: initialDecisions,
   locationHint = 'Munirka Metro Station, New Delhi',
   onDispatchUpdate,
+  onOpenLiveMap,
 }) => {
   const [decisions, setDecisions] = useState<DispatchDecision[]>(initialDecisions);
 
@@ -229,9 +232,21 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
             {locationHint || 'Munirka Metro Station, New Delhi'}
           </span>
         </div>
-        <div className="flex items-center gap-2 shrink-0 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Station Network Active</span>
+        <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-2 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span>Station Network Active</span>
+          </div>
+          {onOpenLiveMap && (
+            <button
+              type="button"
+              onClick={onOpenLiveMap}
+              className="ml-1 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/80 hover:bg-teal-100 dark:hover:bg-teal-900 text-teal-700 dark:text-teal-300 font-semibold text-[11px] flex items-center gap-1.5 border border-teal-200 dark:border-teal-800 transition-all cursor-pointer active:scale-95"
+            >
+              <Map className="w-3.5 h-3.5" />
+              <span>Live Fleet Map</span>
+            </button>
+          )}
         </div>
       </div>
 
