@@ -385,7 +385,7 @@ export const LiveLocationMapCanvas: React.FC<LiveLocationMapCanvasProps> = ({
       }
     });
 
-    let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}.png';
+    let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
     let attribution = '&copy; OpenStreetMap contributors';
 
     if (mapLayer === 'satellite') {
