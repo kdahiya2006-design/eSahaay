@@ -349,7 +349,7 @@ export const LiveLocationMapCanvas: React.FC<LiveLocationMapCanvasProps> = ({
   const [isExpanded, setIsExpanded] = useState<boolean>(true);
   const [simSpeed, setSimSpeed] = useState<number>(1);
   const [radioFeedback, setRadioFeedback] = useState<string | null>(null);
-  const [mapLayer, setMapLayer] = useState<'streets' | 'satellite' | 'dark'>('streets');
+  const [mapLayer, setMapLayer] = useState<'streets' | 'google' | 'satellite'>('streets');
 
   // Resolved GPS anchor for caller
   const callerCoords = resolveCoordinates(locationName);
@@ -385,32 +385,48 @@ export const LiveLocationMapCanvas: React.FC<LiveLocationMapCanvasProps> = ({
       }
     });
 
-    let tileUrl = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
-    let attribution = '&copy; OpenStreetMap contributors';
+    // Street view uses Esri World_Street_Map from server.arcgisonline.com (same reliable CDN as satellite)
+    let tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}';
+    let attribution = 'Tiles &copy; Esri World Street Map';
+    let maxZoom = 19;
 
-    if (mapLayer === 'satellite') {
+    if (mapLayer === 'google') {
+      tileUrl = 'https://mt1.google.com/vt/lyrs=m&x={x}&y={y}&z={z}';
+      attribution = '&copy; Google Maps';
+      maxZoom = 20;
+    } else if (mapLayer === 'satellite') {
       tileUrl = 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}';
-      attribution = 'Tiles &copy; Esri';
-    } else if (mapLayer === 'dark') {
-      tileUrl = 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png';
-      attribution = '&copy; CARTO';
+      attribution = 'Tiles &copy; Esri World Imagery';
+      maxZoom = 19;
     }
 
-    L.tileLayer(tileUrl, {
-      maxZoom: 19,
+    const tileLayerInstance = L.tileLayer(tileUrl, {
+      maxZoom,
       attribution,
     }).addTo(map);
+
+    // Fallback if any tile fails
+    tileLayerInstance.on('tileerror', () => {
+      // Tile fallback handled gracefully
+    });
 
     // Reposition / Pan to caller coords smoothly
     map.setView([callerCoords.lat, callerCoords.lng], map.getZoom() || 12, { animate: true });
 
-    // Invalidate size to ensure proper tile rendering
-    setTimeout(() => {
-      map.invalidateSize();
-    }, 200);
+    // Robust invalidateSize calls to guarantee tile rendering
+    const handleResize = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    const t1 = setTimeout(handleResize, 100);
+    const t2 = setTimeout(handleResize, 400);
 
     return () => {
-      // Cleanup on unmount handled gracefully
+      window.removeEventListener('resize', handleResize);
+      clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [mapLayer, callerCoords.lat, callerCoords.lng]);
 
@@ -623,19 +639,31 @@ export const LiveLocationMapCanvas: React.FC<LiveLocationMapCanvasProps> = ({
               onClick={() => setMapLayer('streets')}
               className={`px-2 py-0.5 rounded font-semibold transition-colors cursor-pointer ${
                 mapLayer === 'streets'
-                  ? 'bg-teal-600 text-white'
+                  ? 'bg-teal-600 text-white shadow-2xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-teal-600'
               }`}
-              title="Standard Road Map"
+              title="Standard Road & Street Map"
             >
               Street
+            </button>
+            <button
+              type="button"
+              onClick={() => setMapLayer('google')}
+              className={`px-2 py-0.5 rounded font-semibold transition-colors cursor-pointer ${
+                mapLayer === 'google'
+                  ? 'bg-teal-600 text-white shadow-2xs'
+                  : 'text-slate-600 dark:text-slate-300 hover:text-teal-600'
+              }`}
+              title="Google Maps Street View"
+            >
+              Google
             </button>
             <button
               type="button"
               onClick={() => setMapLayer('satellite')}
               className={`px-2 py-0.5 rounded font-semibold transition-colors cursor-pointer ${
                 mapLayer === 'satellite'
-                  ? 'bg-teal-600 text-white'
+                  ? 'bg-teal-600 text-white shadow-2xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-teal-600'
               }`}
               title="Satellite Imagery"
@@ -658,7 +686,17 @@ export const LiveLocationMapCanvas: React.FC<LiveLocationMapCanvasProps> = ({
 
           <button
             type="button"
-            onClick={() => setIsExpanded(!isExpanded)}
+            onClick={() => {
+              setIsExpanded((prev) => {
+                const next = !prev;
+                setTimeout(() => {
+                  if (mapInstanceRef.current) {
+                    mapInstanceRef.current.invalidateSize();
+                  }
+                }, 150);
+                return next;
+              });
+            }}
             className="p-1 rounded-lg bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition-colors cursor-pointer"
             title={isExpanded ? 'Collapse map' : 'Expand map'}
           >
