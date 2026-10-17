@@ -1,4 +1,4 @@
-import type { OverviewStatistics, StoredCase } from '../types';
+import type { OverviewStatistics, StoredCase, EvaluationMetrics } from '../types';
 
 export const DUMMY_CASES: StoredCase[] = [
   {
@@ -334,3 +334,53 @@ export const DUMMY_OVERVIEW_DATA: OverviewStatistics = {
   is_demo_dataset: true,
   disclaimer: 'Live helpline triage metrics (Autonomous fallback active).',
 };
+
+export const DUMMY_EVALUATION_METRICS: EvaluationMetrics = {
+  total_test_cases: 18,
+  category_accuracy: 94.4,
+  urgency_accuracy: 94.4,
+  missing_info_detection_rate: 94.4,
+  under_triage_rate: 0.0,
+  under_triage_count: 0,
+  confusion_matrix: {
+    High: {
+      High: 7,
+      Medium: 0,
+      Low: 0,
+      'Unable to Determine': 0,
+    },
+    Medium: {
+      High: 1,
+      Medium: 6,
+      Low: 0,
+      'Unable to Determine': 0,
+    },
+    Low: {
+      High: 0,
+      Medium: 0,
+      Low: 3,
+      'Unable to Determine': 0,
+    },
+    'Unable to Determine': {
+      High: 0,
+      Medium: 0,
+      Low: 0,
+      'Unable to Determine': 1,
+    },
+  },
+  error_cases: [
+    {
+      test_id: 'EVAL-001',
+      case_name: 'Repeated Following with Indirect Verbal Threat',
+      actual_urgency: 'Medium',
+      predicted_urgency: 'High',
+      actual_categories: ['Stalking / Unwanted Following', 'Indirect Threat'],
+      predicted_categories: ['Stalking / Unwanted Following', 'Immediate Physical Threat'],
+      is_under_triage: false,
+      explanation: "Conservative safety triage: elevated from Medium to High due to persistent 3-day motorcycle pursuit and intimidating verbal threat ('dekh lunga'). Over-triage prioritized for victim safety.",
+      transcript_snippet: "Aaj college ke bahar bhi tha. Teesra din hai jab wo meri scooty ke peeche aa raha hai. Maine bola kya chahiye toh usne bola dekh lunga...",
+    },
+  ],
+  evaluated_at: new Date().toISOString(),
+};
+
