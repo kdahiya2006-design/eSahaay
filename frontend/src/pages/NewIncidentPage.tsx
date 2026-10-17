@@ -13,7 +13,7 @@ import { CallSimulationBar } from '../components/CallSimulationBar';
 import { EmergencyDispatchMatrix } from '../components/EmergencyDispatchMatrix';
 import { SituationalQuestionsCard } from '../components/SituationalQuestionsCard';
 import { dispatchEngine } from '../services/dispatchEngine';
-import { ALL_22_INDIAN_LANGUAGES, translateToEnglishAndHindi } from '../data/languages';
+import { translateToEnglishAndHindi } from '../data/languages';
 import { SYNTHETIC_DEMO_CASES } from '../data/demoCases';
 import {
   BookOpen,
@@ -26,10 +26,8 @@ import {
   MapPin,
   Users,
   Languages,
-  Globe,
   Mic,
   MicOff,
-  Clock,
   Volume2,
   VolumeX,
   Check
@@ -625,57 +623,18 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
           </div>
 
           {/* Metadata Controls */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1.5">
-                <Globe className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                <span>Spoken Language (22 Indian Languages)</span>
-              </label>
-              <select
-                value={languageHint}
-                onChange={(e) => setLanguageHint(e.target.value)}
-                className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-hidden font-sans"
-              >
-                <optgroup label="Automatic Detection">
-                  <option value="Auto-detect">Auto-detect (All 22+ Indian Languages)</option>
-                </optgroup>
-                <optgroup label="22 Officially Scheduled Languages of India">
-                  {ALL_22_INDIAN_LANGUAGES.map((l) => (
-                    <option key={l.code} value={l.name}>
-                      {l.name} ({l.nativeName})
-                    </option>
-                  ))}
-                </optgroup>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                <span>Victim Location / Area Landmark</span>
-              </label>
-              <input
-                type="text"
-                value={locationHint}
-                onChange={(e) => setLocationHint(e.target.value)}
-                placeholder="e.g. Munirka Metro, Hauz Khas, Sector 18"
-                className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-hidden"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
-                <span>Time / Operator Notes</span>
-              </label>
-              <input
-                type="text"
-                value={operatorNotes}
-                onChange={(e) => setOperatorNotes(e.target.value)}
-                placeholder="e.g. 10 mins ago; caller anxious in alley"
-                className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-hidden"
-              />
-            </div>
+          <div>
+            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1 flex items-center gap-1">
+              <MapPin className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+              <span>Victim Location / Area Landmark</span>
+            </label>
+            <input
+              type="text"
+              value={locationHint}
+              onChange={(e) => setLocationHint(e.target.value)}
+              placeholder="e.g. Munirka Metro, Hauz Khas, Sector 18"
+              className="w-full text-xs px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:ring-2 focus:ring-teal-500 outline-hidden"
+            />
           </div>
 
           {/* Automated AI Status Bar */}
