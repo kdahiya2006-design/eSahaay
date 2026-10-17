@@ -5,15 +5,12 @@ import type {
   HumanReviewUpdate
 } from '../types';
 import { api } from '../services/api';
-import { TranscriptHighlighter } from '../components/TranscriptHighlighter';
-import { EvidenceCard } from '../components/EvidenceCard';
 import { UrgencyBadge } from '../components/UrgencyBadge';
 import { EmergencyBanner } from '../components/EmergencyBanner';
 import { HumanReviewModal } from '../components/HumanReviewModal';
 import { DemoCaseSelectorModal } from '../components/DemoCaseSelectorModal';
 import { CallSimulationBar } from '../components/CallSimulationBar';
 import { EmergencyDispatchMatrix } from '../components/EmergencyDispatchMatrix';
-import { NearbyServicesRadar } from '../components/NearbyServicesRadar';
 import { SituationalQuestionsCard } from '../components/SituationalQuestionsCard';
 import { MultilingualComprehensionCard } from '../components/MultilingualComprehensionCard';
 import { dispatchEngine } from '../services/dispatchEngine';
@@ -75,7 +72,9 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
   initialCase,
   initialTranscript = '',
 }) => {
-  const [transcript, setTranscript] = useState(initialTranscript);
+  const [transcript, setTranscript] = useState(
+    initialTranscript || (initialCase ? '' : SYNTHETIC_DEMO_CASES[0]?.transcript || '')
+  );
   const [languageHint, setLanguageHint] = useState('Auto-detect');
   const [timeHint, setTimeHint] = useState('');
   const [locationHint, setLocationHint] = useState('Munirka Metro Station, New Delhi');
@@ -83,7 +82,6 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
 
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState<IncidentAnalysis | null>(initialCase || null);
-  const [selectedExcerpt, setSelectedExcerpt] = useState<string | null>(null);
   const [reviewModalOpen, setReviewModalOpen] = useState(false);
   const [demoModalOpen, setDemoModalOpen] = useState(false);
   const [demoCases, setDemoCases] = useState<DemoCase[]>(SYNTHETIC_DEMO_CASES);
@@ -95,6 +93,7 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
   // Speech Recognition
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const lastAnalyzedRef = useRef<string>('');
 
   // Compute live emergency measurement & dispatch decisions
   const emergencyMeasurement = useMemo(() => {
@@ -203,60 +202,44 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
     });
   }, []);
 
-  const handleSelectDemo = (demo: DemoCase) => {
-    stopListening();
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-    setTranscript(demo.transcript);
-    setLanguageHint(demo.language_hint || 'Auto-detect');
-    setTimeHint(demo.incident_time_hint || '');
-    setOperatorNotes(demo.operator_notes || '');
-    setAnalysis(null);
-    setCurrentReview(null);
-  };
+  // Autonomous top-to-bottom AI analysis execution
+  const executeAnalysis = async (
+    textToAnalyze: string,
+    currentLangHint: string,
+    currentTimeHint?: string,
+    currentNotes?: string,
+    currentLoc?: string
+  ) => {
+    const cleanText = textToAnalyze.trim();
+    if (!cleanText || cleanText.length < 5) return;
+    if (lastAnalyzedRef.current === cleanText && analysis) return;
 
-  const handleClear = () => {
-    stopListening();
-    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      window.speechSynthesis.cancel();
-    }
-    setTranscript('');
-    setTimeHint('');
-    setOperatorNotes('');
-    setAnalysis(null);
-    setCurrentReview(null);
-    setSelectedExcerpt(null);
-    setIsSimulatedCallActive(false);
-  };
-
-  const handleAnalyze = async (e?: React.FormEvent) => {
-    if (e) e.preventDefault();
-    if (!transcript.trim() || transcript.trim().length < 5) return;
-
+    lastAnalyzedRef.current = cleanText;
     setLoading(true);
-    setCurrentReview(null);
+
     try {
       const res = await api.analyzeTranscript({
-        transcript: transcript.trim(),
-        language_hint: languageHint,
-        incident_time_hint: timeHint.trim() || undefined,
-        operator_notes: operatorNotes.trim() || undefined,
+        transcript: cleanText,
+        language_hint: currentLangHint,
+        incident_time_hint: currentTimeHint?.trim() || undefined,
+        operator_notes: currentNotes?.trim() || undefined,
       });
       setAnalysis(res);
-      if (res.evidence_items.length > 0) {
-        setSelectedExcerpt(res.evidence_items[0].transcript_excerpt);
-      }
       if (res.location?.mentioned_location && !res.location.is_vague_or_incomplete) {
         setLocationHint(res.location.mentioned_location);
       }
     } catch (err: any) {
-      console.error(err);
-      // Even if offline/error, generate immediate fallback analysis
-      const fallbackTrans = translateToEnglishAndHindi(transcript.trim(), languageHint);
+      console.warn('Backend LLM API unavailable, applying deterministic fallback engine:', err);
+      const fallbackTrans = translateToEnglishAndHindi(cleanText, currentLangHint);
+      const measurement = dispatchEngine.evaluateEmergencyMeasurement(
+        cleanText,
+        [],
+        'Medium',
+        false
+      );
       const fallbackAnalysis: IncidentAnalysis = {
         case_id: `ESH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`,
-        incident_summary: `Victim complaint analyzed in ${fallbackTrans.detectedLanguage}. Urgency assessed via deterministic rule engine.`,
+        incident_summary: `Victim complaint analyzed in ${fallbackTrans.detectedLanguage}. Threat index: ${measurement.threatScore}/100. Primary response: ${measurement.primaryService.toUpperCase()}.`,
         detected_language: fallbackTrans.detectedLanguage,
         detected_language_script: fallbackTrans.detectedScript,
         translations: {
@@ -265,22 +248,29 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
           hinglish: fallbackTrans.hinglish,
           detected_dialect_or_notes: fallbackTrans.dialectNotes,
         },
-        incident_categories: ['Stalking / Safety Distress', 'Helpline Triage'],
-        key_entities: ['Caller', 'Location'],
+        incident_categories: measurement.primaryService === 'fire'
+          ? ['Fire Hazard / Evacuation Risk']
+          : measurement.primaryService === 'police'
+          ? ['Active Intrusion / Violence Risk', 'Physical Safety Threat']
+          : ['Helpline Triage', 'Distress Support'],
+        key_entities: ['Caller', currentLoc || locationHint],
         location: {
-          mentioned_location: locationHint,
-          confidence: 'Medium',
+          mentioned_location: currentLoc || locationHint,
+          confidence: 'High',
           is_vague_or_incomplete: false,
-          landmarks: [locationHint],
+          landmarks: [currentLoc || locationHint],
         },
         potential_safety_concerns: ['Perceived pursuit or distress reported'],
-        provisional_urgency: emergencyMeasurement.urgencyLevel,
-        urgency_reasons: ['Evaluated via safety measurement matrix and active complaint context.'],
-        immediate_danger_flag: emergencyMeasurement.threatScore >= 80,
+        provisional_urgency: measurement.urgencyLevel,
+        urgency_reasons: [
+          `Evaluated via situational measurement matrix. Threat score ${measurement.threatScore}/100.`,
+          `Primary field dispatch service recommended: ${measurement.primaryService.toUpperCase()}.`
+        ],
+        immediate_danger_flag: measurement.threatScore >= 80,
         evidence_items: [
           {
             finding: 'Primary reported distress',
-            transcript_excerpt: transcript.slice(0, 120),
+            transcript_excerpt: cleanText.slice(0, 120),
             english_translation: fallbackTrans.english.slice(0, 120),
             hindi_translation: fallbackTrans.hindi.slice(0, 120),
             relevance: 'Verbatim caller testimony during helpline session.',
@@ -309,29 +299,76 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
     }
   };
 
+  // Automatic real-time AI analysis trigger with debouncing (no clicking required)
+  useEffect(() => {
+    if (!transcript || transcript.trim().length < 8) return;
+    const timer = setTimeout(() => {
+      executeAnalysis(transcript, languageHint, timeHint, operatorNotes, locationHint);
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [transcript, languageHint, locationHint]);
+
+  // Initial auto-analysis on mount if transcript is available
+  useEffect(() => {
+    if (transcript && transcript.trim().length >= 8 && !analysis) {
+      executeAnalysis(transcript, languageHint, timeHint, operatorNotes, locationHint);
+    }
+  }, []);
+
+  const handleSelectDemo = (demo: DemoCase) => {
+    stopListening();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    const lang = demo.language_hint || 'Auto-detect';
+    const time = demo.incident_time_hint || '';
+    const notes = demo.operator_notes || '';
+    setTranscript(demo.transcript);
+    setLanguageHint(lang);
+    setTimeHint(time);
+    setOperatorNotes(notes);
+    setCurrentReview(null);
+
+    // AI automatically analyzes the loaded scenario top-to-bottom without clicking
+    executeAnalysis(demo.transcript, lang, time, notes, locationHint);
+  };
+
+  const handleClear = () => {
+    stopListening();
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
+    lastAnalyzedRef.current = '';
+    setTranscript('');
+    setTimeHint('');
+    setOperatorNotes('');
+    setAnalysis(null);
+    setCurrentReview(null);
+    setIsSimulatedCallActive(false);
+  };
+
+  const handleAnalyze = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    lastAnalyzedRef.current = '';
+    executeAnalysis(transcript, languageHint, timeHint, operatorNotes, locationHint);
+  };
+
   // Callback when a simulated call is answered
   const handleCallAccepted = (callTranscript: string, langHint: string, callerLoc: string) => {
     setIsSimulatedCallActive(true);
     setTranscript(callTranscript);
     setLanguageHint(langHint);
     setLocationHint(callerLoc);
+    setCurrentReview(null);
 
-    // Automatically trigger immediate analysis for seamless flow
-    setTimeout(() => {
-      api.analyzeTranscript({
-        transcript: callTranscript,
-        language_hint: langHint,
-        incident_time_hint: 'Just now (Simulated Inbound Call)',
-        operator_notes: `Inbound helpline call from ${callerLoc}`,
-      }).then((res) => {
-        setAnalysis(res);
-        if (res.evidence_items.length > 0) {
-          setSelectedExcerpt(res.evidence_items[0].transcript_excerpt);
-        }
-      }).catch(() => {
-        // Fallback analysis generated automatically via useEffect
-      });
-    }, 300);
+    // Automatically trigger immediate top-to-bottom AI analysis
+    executeAnalysis(
+      callTranscript,
+      langHint,
+      'Just now (Simulated Inbound Call)',
+      `Inbound helpline call from ${callerLoc}`,
+      callerLoc
+    );
   };
 
   const handleCallEnded = () => {
@@ -380,7 +417,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
         immediateDanger={analysis ? analysis.immediate_danger_flag : emergencyMeasurement.threatScore >= 80}
       />
 
-      {/* 2. Helpline Call Simulator & Ringtone Center (Requirement 1) */}
+      {/* 2. Helpline Call Simulator & Ringtone Center */}
       <CallSimulationBar
         onCallAccepted={handleCallAccepted}
         onCallEnded={handleCallEnded}
@@ -388,7 +425,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
         activeLanguage={languageHint}
       />
 
-      {/* 3. Main Live Conversation & Complaint Input Console (Requirement 7) */}
+      {/* 3. Main Live Conversation & Complaint Input Console */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-4 sm:p-6 space-y-4 sm:space-y-5 transition-colors">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
           <div>
@@ -397,7 +434,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
               <span>Caller Testimony & Live Conversation Feed</span>
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Live verbatim victim transcript in any of India's 22 regional languages. Supports real-time speech dictation and instant bilingual translation.
+              Live victim transcript in any of India's 22 regional languages. Evaluated autonomously top-to-bottom by AI.
             </p>
           </div>
 
@@ -405,7 +442,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
             <button
               type="button"
               onClick={() => setDemoModalOpen(true)}
-              className="px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs active:scale-95"
+              className="px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-xs active:scale-95 cursor-pointer"
             >
               <BookOpen className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
               <span>Load Scenarios</span>
@@ -413,7 +450,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
             <button
               type="button"
               onClick={handleClear}
-              className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 text-xs transition-colors active:scale-95"
+              className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 text-xs transition-colors active:scale-95 cursor-pointer"
               title="Clear input"
             >
               <Trash2 className="w-4 h-4" />
@@ -432,7 +469,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
                 <button
                   type="button"
                   onClick={isListening ? stopListening : startListening}
-                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs ${
+                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer ${
                     isListening
                       ? 'bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800 animate-pulse'
                       : 'bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
@@ -477,7 +514,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
                 <button
                   type="button"
                   onClick={stopListening}
-                  className="ml-auto text-[11px] font-bold text-red-700 dark:text-red-300 underline shrink-0"
+                  className="ml-auto text-[11px] font-bold text-red-700 dark:text-red-300 underline shrink-0 cursor-pointer"
                 >
                   Stop
                 </button>
@@ -539,33 +576,39 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
             </div>
           </div>
 
-          {/* Action Row */}
+          {/* Automated AI Status Bar (No click required to analyze) */}
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-            <span className="text-xs text-slate-500 dark:text-slate-400 hidden sm:inline">
-              eSahaay evaluates threats, negations, 6 emergency service dispatches, and nearby PCRs.
+            <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+              <span>AI analyzes caller speech, questions, and dispatches in the background. Operator only clicks to dispatch.</span>
             </span>
-            <button
-              type="submit"
-              disabled={loading || transcript.trim().length < 5}
-              className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white font-semibold text-sm shadow-md shadow-teal-900/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed sm:ml-auto cursor-pointer"
-            >
+
+            <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
               {loading ? (
-                <>
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Analyzing Emergency...</span>
-                </>
+                <div className="px-3.5 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 text-xs font-semibold flex items-center gap-2">
+                  <div className="w-3.5 h-3.5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+                  <span>AI Analyzing Incident...</span>
+                </div>
               ) : (
-                <>
-                  <Sparkles className="w-4 h-4 shrink-0" />
-                  <span>Analyze & Measure Emergency</span>
-                </>
+                <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5">
+                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>AI Live Analysis Active (Autonomous)</span>
+                </div>
               )}
-            </button>
+            </div>
           </div>
         </form>
       </div>
 
-      {/* 4. 22-Language Helpline Translation Console (Requirement 3 & 7) */}
+      {/* 4. Suggested Operator Follow-Up Questions (Right below transcript for zero-scroll operator workflow) */}
+      <SituationalQuestionsCard
+        questions={situationalQuestions}
+        onAddCustomQuestion={(q) => {
+          setOperatorNotes((prev) => (prev ? `${prev}; Operator asked: "${q}"` : `Operator asked: "${q}"`));
+        }}
+      />
+
+      {/* 5. 22-Language Helpline Translation Console */}
       <MultilingualComprehensionCard
         transcript={transcript}
         detectedLanguage={analysis?.detected_language || languageHint}
@@ -578,31 +621,18 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
         }}
       />
 
-      {/* 5. Emergency Threat Measurement & 6-Service Dispatch Engine (Requirement 2) */}
+      {/* 6. Emergency Threat Measurement & 6-Service Dispatch Engine (Integrated with Stations & Service Locations) */}
       <EmergencyDispatchMatrix
         threatScore={emergencyMeasurement.threatScore}
         urgencyLevel={analysis?.provisional_urgency || emergencyMeasurement.urgencyLevel}
         primaryService={emergencyMeasurement.primaryService}
         decisions={emergencyMeasurement.decisions}
-      />
-
-      {/* 6. Nearby Emergency Services Radar (Requirement 4) */}
-      <NearbyServicesRadar
         locationHint={analysis?.location?.mentioned_location || locationHint}
       />
 
-      {/* 7. Suggested Operator Follow-Up Questions (Requirement 6) */}
-      <SituationalQuestionsCard
-        questions={situationalQuestions}
-        onAddCustomQuestion={(q) => {
-          setOperatorNotes((prev) => (prev ? `${prev}; Operator asked: "${q}"` : `Operator asked: "${q}"`));
-        }}
-      />
-
-      {/* 8. Full Incident Evidence & Safeguard Verification Section */}
+      {/* 7. Full Incident Overview & Triage Metadata Bar */}
       {analysis && (
-        <div className="space-y-4 sm:space-y-6">
-          {/* Top Triage Summary Bar */}
+        <div className="space-y-4">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-4 sm:p-6 transition-colors">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
               <div className="space-y-1">
@@ -624,6 +654,12 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
                 <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 pt-1 leading-relaxed">
                   {analysis.incident_summary}
                 </p>
+                {analysis.urgency_reasons && analysis.urgency_reasons.length > 0 && (
+                  <div className="pt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">Assessment Rationale:</span>
+                    <span>{analysis.urgency_reasons.join(' • ')}</span>
+                  </div>
+                )}
               </div>
 
               {/* Actions */}
@@ -631,7 +667,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
                 <button
                   type="button"
                   onClick={() => setReviewModalOpen(true)}
-                  className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all"
+                  className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
                 >
                   <Edit3 className="w-3.5 h-3.5" />
                   <span>{currentReview ? 'Edit Operator Review' : 'Human Operator Review'}</span>
@@ -639,7 +675,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
                 <button
                   type="button"
                   onClick={copySummary}
-                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs transition-colors active:scale-95"
+                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs transition-colors active:scale-95 cursor-pointer"
                   title="Copy Report Summary"
                 >
                   <Copy className="w-4 h-4" />
@@ -647,7 +683,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
                 <button
                   type="button"
                   onClick={exportJSON}
-                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs transition-colors active:scale-95"
+                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs transition-colors active:scale-95 cursor-pointer"
                   title="Export JSON"
                 >
                   <Download className="w-4 h-4" />
@@ -656,7 +692,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
             </div>
 
             {/* Quick Meta Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pt-3 sm:pt-4 text-xs border-t border-slate-100 dark:border-slate-800">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pt-3 sm:pt-4 text-xs">
               <div className="space-y-0.5">
                 <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1 text-[11px] font-medium">
                   <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
@@ -718,69 +754,6 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
               </div>
             </div>
           </div>
-
-          {/* Interactive Evidence-Based Reporting Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Left: Transcript Highlighter & Negation Verification */}
-            <div className="space-y-4">
-              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-                <div className="p-3 bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
-                  <span>Verbatim Highlight Mapping:</span>
-                  <span className="text-[11px] text-slate-500 dark:text-slate-400 font-normal">
-                    Grounding Proof
-                  </span>
-                </div>
-
-                <TranscriptHighlighter
-                  transcript={transcript}
-                  evidenceItems={analysis.evidence_items}
-                  negations={analysis.negations_detected}
-                  contradictions={analysis.contradictions_detected}
-                  selectedExcerpt={selectedExcerpt}
-                  onSelectExcerpt={setSelectedExcerpt}
-                  detectedLanguage={analysis.detected_language}
-                />
-              </div>
-
-              {/* Urgency Rationale Card */}
-              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 p-4 shadow-xs space-y-2">
-                <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Provisional Urgency Reasons
-                </h4>
-                <ul className="space-y-1 text-xs text-slate-700 dark:text-slate-300">
-                  {analysis.urgency_reasons.map((reason, idx) => (
-                    <li key={idx} className="flex items-start gap-2 leading-relaxed">
-                      <span className="text-teal-600 dark:text-teal-400 font-bold">•</span>
-                      <span>{reason}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-
-            {/* Right: Extracted Evidence Cards */}
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                  Verbatim Evidence Grounding ({analysis.evidence_items.length} Findings)
-                </h4>
-                <span className="text-[11px] text-slate-600 dark:text-slate-400">
-                  Select card to focus quote
-                </span>
-              </div>
-
-              <div className="space-y-3">
-                {analysis.evidence_items.map((item, idx) => (
-                  <EvidenceCard
-                    key={idx}
-                    item={item}
-                    isSelected={selectedExcerpt === item.transcript_excerpt}
-                    onSelect={() => setSelectedExcerpt(item.transcript_excerpt)}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -807,3 +780,4 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
 };
 
 export default NewIncidentPage;
+

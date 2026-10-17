@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   ShieldAlert,
   Ambulance,
@@ -10,16 +10,21 @@ import {
   Radio,
   Send,
   RotateCcw,
-  AlertTriangle
+  AlertTriangle,
+  MapPin,
+  Navigation,
+  Clock
 } from 'lucide-react';
-import type { DispatchDecision, DispatchServiceType, UrgencyLevel } from '../types';
+import type { DispatchDecision, DispatchServiceType, UrgencyLevel, NearbyEmergencyUnit } from '../types';
 import { ringtoneService } from '../services/ringtoneService';
+import { dispatchEngine } from '../services/dispatchEngine';
 
 export interface EmergencyDispatchMatrixProps {
   threatScore: number;
   urgencyLevel: UrgencyLevel;
   primaryService: DispatchServiceType;
   decisions: DispatchDecision[];
+  locationHint?: string;
   onDispatchUpdate?: (updatedDecisions: DispatchDecision[]) => void;
 }
 
@@ -70,6 +75,7 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
   urgencyLevel,
   primaryService,
   decisions: initialDecisions,
+  locationHint = 'Munirka Metro Station, New Delhi',
   onDispatchUpdate,
 }) => {
   const [decisions, setDecisions] = useState<DispatchDecision[]>(initialDecisions);
@@ -79,9 +85,28 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
     setDecisions(initialDecisions);
   }, [initialDecisions]);
 
+  // Compute nearby stations & emergency units based on current victim location
+  const nearbyUnits = useMemo(() => {
+    return dispatchEngine.getNearbyEmergencyUnits(locationHint || 'Munirka Metro Station, New Delhi');
+  }, [locationHint]);
+
+  // Map each service to its nearest localized unit and station
+  const serviceUnitMap = useMemo(() => {
+    const map: Record<DispatchServiceType, NearbyEmergencyUnit | undefined> = {
+      police: nearbyUnits.find((u) => u.serviceType === 'police'),
+      ambulance: nearbyUnits.find((u) => u.serviceType === 'ambulance'),
+      medical: nearbyUnits.find((u) => u.serviceType === 'medical'),
+      fire: nearbyUnits.find((u) => u.serviceType === 'fire'),
+      ngo: nearbyUnits.find((u) => u.serviceType === 'ngo'),
+      shelter: nearbyUnits.find((u) => u.serviceType === 'shelter'),
+    };
+    return map;
+  }, [nearbyUnits]);
+
   const toggleDispatch = (service: DispatchServiceType) => {
     ringtoneService.playDispatchSound();
     const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const matchingUnit = serviceUnitMap[service];
 
     const updated = decisions.map((d) => {
       if (d.service === service) {
@@ -91,9 +116,9 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
           dispatched: nextDispatched,
           dispatchedAt: nextDispatched ? now : undefined,
           assignedUnit: nextDispatched
-            ? (d.service === 'police' ? 'PCR-Eagle-04' : d.service === 'ambulance' ? 'CATS-ALS-31' : d.service === 'fire' ? 'DFS-Tender-04' : d.service === 'medical' ? 'Casualty-Unit-1' : d.service === 'shelter' ? 'Swadhar-Refuge-03' : 'Sakhi-OSC-01')
+            ? (matchingUnit?.unitCode || (d.service === 'police' ? 'PCR-Eagle-04' : d.service === 'ambulance' ? 'CATS-ALS-31' : d.service === 'fire' ? 'DFS-WT-04' : d.service === 'medical' ? 'HOSP-TRAUMA-01' : d.service === 'shelter' ? 'SHELTER-SWD-03' : 'NGO-SAKHI-01'))
             : undefined,
-          etaMinutes: nextDispatched ? (d.service === 'police' ? 3 : d.service === 'ambulance' ? 4 : 6) : undefined,
+          etaMinutes: nextDispatched ? (matchingUnit?.etaMinutes || (d.service === 'police' ? 3 : d.service === 'ambulance' ? 4 : 6)) : undefined,
         };
       }
       return d;
@@ -111,12 +136,13 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
 
     const updated = decisions.map((d) => {
       if (d.status === 'RECOMMENDED') {
+        const matchingUnit = serviceUnitMap[d.service];
         return {
           ...d,
           dispatched: true,
           dispatchedAt: now,
-          assignedUnit: d.service === 'police' ? 'PCR-Eagle-04' : d.service === 'ambulance' ? 'CATS-ALS-31' : d.service === 'fire' ? 'DFS-Tender-04' : d.service === 'medical' ? 'Casualty-Unit-1' : d.service === 'shelter' ? 'Swadhar-Refuge-03' : 'Sakhi-OSC-01',
-          etaMinutes: d.service === 'police' ? 3 : d.service === 'ambulance' ? 4 : 6,
+          assignedUnit: matchingUnit?.unitCode || (d.service === 'police' ? 'PCR-Eagle-04' : d.service === 'ambulance' ? 'CATS-ALS-31' : d.service === 'fire' ? 'DFS-WT-04' : d.service === 'medical' ? 'HOSP-TRAUMA-01' : d.service === 'shelter' ? 'SHELTER-SWD-03' : 'NGO-SAKHI-01'),
+          etaMinutes: matchingUnit?.etaMinutes || (d.service === 'police' ? 3 : d.service === 'ambulance' ? 4 : 6),
         };
       }
       return d;
@@ -157,7 +183,7 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
             </span>
           </div>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Automatically evaluates threat severity and determines which emergency services (Medical, Ambulance, Police, Fire, NGO, Shelter) must be dispatched.
+            Automatically evaluates threat severity, locates nearest emergency stations, and determines which services must be dispatched.
           </p>
         </div>
 
@@ -197,19 +223,35 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
         </div>
       </div>
 
-      {/* 6 Services Decision Grid */}
+      {/* Geotagged Service Radius Anchor Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-xs">
+        <div className="flex items-center gap-2 min-w-0">
+          <MapPin className="w-4 h-4 text-rose-500 shrink-0 animate-bounce" />
+          <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Caller Location Anchor:</span>
+          <span className="font-bold text-slate-900 dark:text-white truncate">
+            {locationHint || 'Munirka Metro Station, New Delhi'}
+          </span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          <span>Station GPS locations & response ETAs synchronized below</span>
+        </div>
+      </div>
+
+      {/* 6 Services Decision Grid with Integrated Station Locations */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
         {decisions.map((decision) => {
           const Icon = SERVICE_ICONS[decision.service];
           const colors = SERVICE_COLORS[decision.service];
           const isPrimary = decision.service === primaryService && decision.status === 'RECOMMENDED';
+          const unit = serviceUnitMap[decision.service];
 
           return (
             <div
               key={decision.service}
-              className={`rounded-2xl border p-4 transition-all flex flex-col justify-between ${
+              className={`rounded-2xl border p-4 transition-all flex flex-col justify-between gap-3 ${
                 decision.dispatched
-                  ? 'bg-emerald-50/60 dark:bg-emerald-950/40 border-emerald-300 dark:border-emerald-800 shadow-sm'
+                  ? 'bg-emerald-50/70 dark:bg-emerald-950/50 border-emerald-300 dark:border-emerald-700 shadow-sm'
                   : decision.status === 'RECOMMENDED'
                   ? `${colors.bg} ${colors.border} shadow-xs`
                   : 'bg-white dark:bg-slate-800/60 border-slate-200 dark:border-slate-800 opacity-90'
@@ -261,27 +303,70 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
                   </div>
                 </div>
 
-                {/* Reasoning Description */}
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed min-h-[42px]">
+                {/* AI Reasoning Description */}
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed min-h-[38px]">
                   {decision.reason}
                 </p>
 
-                {/* Dispatched Info Banner (if dispatched) */}
-                {decision.dispatched && (
-                  <div className="p-2.5 rounded-xl bg-emerald-100/70 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 text-xs flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-medium">
-                      <Radio className="w-3.5 h-3.5 text-emerald-600 animate-ping" />
-                      <span>Unit: {decision.assignedUnit}</span>
+                {/* Station Location & Response Details Box */}
+                {unit && (
+                  <div className="p-2.5 rounded-xl bg-slate-50/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 space-y-1.5 text-xs">
+                    <div className="flex items-start gap-1.5">
+                      <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0 mt-0.5" />
+                      <div className="min-w-0">
+                        <span className="text-[10px] uppercase font-bold text-slate-400 dark:text-slate-500 block leading-tight">
+                          Station / Location
+                        </span>
+                        <span className="font-semibold text-slate-800 dark:text-slate-200 text-xs block truncate" title={unit.stationName}>
+                          {unit.stationName}
+                        </span>
+                      </div>
                     </div>
-                    <span className="text-[11px] font-mono font-bold">
-                      ETA: ~{decision.etaMinutes || 4} mins
-                    </span>
+
+                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-200/60 dark:border-slate-700/60">
+                      <span className="flex items-center gap-1 font-mono font-semibold text-emerald-700 dark:text-emerald-400">
+                        <Navigation className="w-3 h-3 text-emerald-600" />
+                        {unit.distanceKm} km away
+                      </span>
+                      <span className="flex items-center gap-1 font-mono text-slate-600 dark:text-slate-400">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        ETA ~{unit.etaMinutes} mins
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-400 pt-0.5">
+                      <span className="font-mono text-slate-700 dark:text-slate-300 font-medium truncate max-w-[130px]">
+                        Unit: {unit.unitCode}
+                      </span>
+                      <span className="text-slate-400 dark:text-slate-500 truncate max-w-[130px] font-mono">
+                        {unit.contactNumber}
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Dispatched Info Banner (when dispatched) */}
+                {decision.dispatched && (
+                  <div className="p-2.5 rounded-xl bg-emerald-100/90 dark:bg-emerald-950/90 border border-emerald-300 dark:border-emerald-700 text-emerald-900 dark:text-emerald-200 text-xs space-y-1 animate-fadeIn">
+                    <div className="flex items-center justify-between font-bold">
+                      <div className="flex items-center gap-1.5">
+                        <Radio className="w-3.5 h-3.5 text-emerald-600 animate-ping" />
+                        <span>EN ROUTE TRANSMITTING GPS</span>
+                      </div>
+                      <span className="text-[11px] font-mono bg-emerald-200 dark:bg-emerald-800 px-2 py-0.5 rounded text-emerald-950 dark:text-emerald-100">
+                        ETA ~{unit?.etaMinutes || decision.etaMinutes || 3} mins
+                      </span>
+                    </div>
+                    <div className="text-[11px] text-emerald-800 dark:text-emerald-300 flex items-center gap-1 truncate">
+                      <MapPin className="w-3 h-3 text-emerald-600 shrink-0" />
+                      <span>From: {unit?.stationName || 'Regional Standby Post'}</span>
+                    </div>
                   </div>
                 )}
               </div>
 
               {/* Action Button */}
-              <div className="pt-3 mt-2 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between gap-2">
+              <div className="pt-3 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between gap-2">
                 <span className="text-[11px] text-slate-400 dark:text-slate-500 font-mono">
                   {decision.dispatchedAt ? `Sent at ${decision.dispatchedAt}` : `Priority: ${decision.urgency}`}
                 </span>
@@ -289,7 +374,7 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
                 <button
                   type="button"
                   onClick={() => toggleDispatch(decision.service)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs ${
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-xs cursor-pointer ${
                     decision.dispatched
                       ? 'bg-slate-200 dark:bg-slate-700 hover:bg-red-100 dark:hover:bg-red-950 hover:text-red-700 text-slate-700 dark:text-slate-200'
                       : decision.status === 'RECOMMENDED'
@@ -319,13 +404,13 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 text-xs text-slate-500 dark:text-slate-400">
         <span className="flex items-center gap-1.5">
           <CheckCircle2 className="w-4 h-4 text-teal-600" />
-          <span>Operator protocol: Field dispatches log GPS coordinates, timestamp, and radio frequency.</span>
+          <span>Operator protocol: Field dispatches log station GPS coordinates, timestamp, and VHF radio frequency.</span>
         </span>
 
         <button
           type="button"
           onClick={dispatchAllRecommended}
-          className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-teal-900/20 transition-all flex items-center justify-center gap-1.5 self-start sm:self-auto"
+          className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-teal-900/20 transition-all flex items-center justify-center gap-1.5 self-start sm:self-auto cursor-pointer"
         >
           <Send className="w-3.5 h-3.5" />
           <span>Dispatch All Recommended Services</span>
@@ -334,3 +419,4 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
     </div>
   );
 };
+
