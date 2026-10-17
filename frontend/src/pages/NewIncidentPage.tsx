@@ -12,7 +12,6 @@ import { DemoCaseSelectorModal } from '../components/DemoCaseSelectorModal';
 import { CallSimulationBar } from '../components/CallSimulationBar';
 import { EmergencyDispatchMatrix } from '../components/EmergencyDispatchMatrix';
 import { SituationalQuestionsCard } from '../components/SituationalQuestionsCard';
-import { MultilingualComprehensionCard } from '../components/MultilingualComprehensionCard';
 import { dispatchEngine } from '../services/dispatchEngine';
 import { ALL_22_INDIAN_LANGUAGES, translateToEnglishAndHindi } from '../data/languages';
 import { SYNTHETIC_DEMO_CASES } from '../data/demoCases';
@@ -31,7 +30,10 @@ import {
   Globe,
   Mic,
   MicOff,
-  Clock
+  Clock,
+  Volume2,
+  VolumeX,
+  Check
 } from 'lucide-react';
 
 const SPEECH_LANG_MAP: Record<string, string> = {
@@ -113,6 +115,47 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
       analysis?.immediate_danger_flag || false
     );
   }, [transcript, analysis]);
+
+  // English Translation state & speech synthesis
+  const [isPlayingEnglish, setIsPlayingEnglish] = useState(false);
+  const [copiedEnglish, setCopiedEnglish] = useState(false);
+
+  // Real-time AI English translation of any spoken Indian language
+  const englishTranslation = useMemo(() => {
+    if (!transcript.trim()) return '';
+    if (analysis?.translations?.english) {
+      return analysis.translations.english;
+    }
+    const res = translateToEnglishAndHindi(transcript.trim(), languageHint);
+    return res.english;
+  }, [transcript, languageHint, analysis]);
+
+  const handlePlayEnglish = () => {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      alert('Speech synthesis audio is not supported in this browser.');
+      return;
+    }
+    if (isPlayingEnglish) {
+      window.speechSynthesis.cancel();
+      setIsPlayingEnglish(false);
+      return;
+    }
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(englishTranslation);
+    utterance.lang = 'en-IN';
+    utterance.rate = 0.95;
+    utterance.onend = () => setIsPlayingEnglish(false);
+    utterance.onerror = () => setIsPlayingEnglish(false);
+    setIsPlayingEnglish(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleCopyEnglish = () => {
+    if (!englishTranslation) return;
+    navigator.clipboard.writeText(englishTranslation);
+    setCopiedEnglish(true);
+    setTimeout(() => setCopiedEnglish(false), 2000);
+  };
 
   const startListening = () => {
     if (typeof window === 'undefined') return;
@@ -520,6 +563,69 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
                 </button>
               </div>
             )}
+
+            {/* Real-time AI English Translation (Translates any spoken language into English) */}
+            {transcript.trim() && (
+              <div className="mt-3 rounded-xl border border-teal-200 dark:border-teal-800/80 bg-teal-50/50 dark:bg-teal-950/30 p-3.5 sm:p-4 space-y-2 animate-fadeIn transition-colors">
+                <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-teal-200/60 dark:border-teal-800/60">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1 rounded-md bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-300">
+                      <Languages className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="text-xs font-bold text-slate-900 dark:text-white uppercase tracking-wider">
+                      Live AI English Translation
+                    </span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-teal-100 dark:bg-teal-900/80 text-teal-800 dark:text-teal-300 border border-teal-300 dark:border-teal-700">
+                      {analysis?.detected_language || languageHint} → English
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={handlePlayEnglish}
+                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-teal-200 dark:border-teal-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-700 text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                      title="Listen to English translation"
+                    >
+                      {isPlayingEnglish ? (
+                        <>
+                          <VolumeX className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
+                          <span>Stop</span>
+                        </>
+                      ) : (
+                        <>
+                          <Volume2 className="w-3.5 h-3.5 text-teal-600" />
+                          <span>Listen</span>
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCopyEnglish}
+                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-teal-200 dark:border-teal-700 text-teal-700 dark:text-teal-300 hover:bg-teal-50 dark:hover:bg-slate-700 text-[11px] font-semibold flex items-center gap-1.5 transition-colors cursor-pointer shadow-2xs"
+                      title="Copy English translation"
+                    >
+                      {copiedEnglish ? (
+                        <>
+                          <Check className="w-3.5 h-3.5 text-emerald-600" />
+                          <span>Copied</span>
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="w-3.5 h-3.5 text-slate-500" />
+                          <span>Copy EN</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-100 leading-relaxed font-sans font-medium">
+                  "{englishTranslation}"
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Metadata Controls */}
@@ -608,20 +714,7 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
         }}
       />
 
-      {/* 5. 22-Language Helpline Translation Console */}
-      <MultilingualComprehensionCard
-        transcript={transcript}
-        detectedLanguage={analysis?.detected_language || languageHint}
-        detectedScript={analysis?.detected_language_script}
-        translations={analysis?.translations}
-        onLanguageSelect={(lang) => setLanguageHint(lang)}
-        onApplySample={(sample, lang) => {
-          setTranscript(sample);
-          setLanguageHint(lang);
-        }}
-      />
-
-      {/* 6. Emergency Threat Measurement & 6-Service Dispatch Engine (Integrated with Stations & Service Locations) */}
+      {/* 5. Emergency Threat Measurement & 6-Service Dispatch Engine (Integrated with Stations & Service Locations) */}
       <EmergencyDispatchMatrix
         threatScore={emergencyMeasurement.threatScore}
         urgencyLevel={analysis?.provisional_urgency || emergencyMeasurement.urgencyLevel}
