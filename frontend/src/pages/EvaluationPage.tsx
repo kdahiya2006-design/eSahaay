@@ -44,9 +44,6 @@ export const EvaluationPage: React.FC = () => {
             <BarChart3 className="w-5 h-5 text-teal-600 shrink-0" />
             <span>Benchmark Evaluation Dashboard</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Objective quantitative evaluation on ground-truth labeled synthetic edge cases. Metrics are computed live from execution.
-          </p>
         </div>
 
         <button
@@ -153,9 +150,6 @@ export const EvaluationPage: React.FC = () => {
                 <h3 className="text-xs sm:text-sm font-semibold text-slate-900 tracking-tight">
                   Urgency Classification Confusion Matrix
                 </h3>
-                <p className="text-[11px] sm:text-xs text-slate-500">
-                  Rows represent <strong>Actual Ground-Truth</strong>; Columns represent <strong>Model Predicted Urgency</strong>.
-                </p>
               </div>
               <span className="text-[11px] font-mono text-slate-600 self-start sm:self-auto">
                 N = {metrics.total_test_cases}
@@ -235,9 +229,6 @@ export const EvaluationPage: React.FC = () => {
                   <AlertOctagon className="w-4 h-4 text-amber-600" />
                   <span>Discrepancy Analysis & Qualitative Inspect</span>
                 </h3>
-                <p className="text-xs text-slate-500">
-                  Inspecting cases where predicted urgency or categories differed from ground-truth expectations.
-                </p>
               </div>
               <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 font-medium">
                 {metrics.error_cases.length} cases flagged

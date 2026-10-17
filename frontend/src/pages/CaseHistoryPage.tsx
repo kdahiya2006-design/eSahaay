@@ -123,9 +123,6 @@ export const CaseHistoryPage: React.FC<CaseHistoryPageProps> = ({
             <FileText className="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0" />
             <span>Incident Case History</span>
           </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Search, filter, and inspect reviewed incident reports persisted in local storage.
-          </p>
         </div>
 
         <button

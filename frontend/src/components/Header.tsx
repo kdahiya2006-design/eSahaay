@@ -11,7 +11,6 @@ import {
 
 interface HeaderProps {
   title: string;
-  subtitle?: string;
   modeLabel?: string;
   isDemoMode?: boolean;
   operatorId?: string;
@@ -22,7 +21,6 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   title,
-  subtitle,
   modeLabel = 'Demo Mode: Deterministic Engine',
   isDemoMode = true,
   operatorId = 'OP-Delhi-104',
@@ -52,11 +50,6 @@ export const Header: React.FC<HeaderProps> = ({
                 {title}
               </h2>
             </div>
-            {subtitle && (
-              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 font-normal mt-0.5 truncate hidden sm:block">
-                {subtitle}
-              </p>
-            )}
           </div>
         </div>
 

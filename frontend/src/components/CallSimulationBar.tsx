@@ -339,9 +339,6 @@ export const CallSimulationBar: React.FC<CallSimulationBarProps> = ({
                 Ready for Calls
               </span>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Simulate realistic emergency incoming distress calls with live ringtone audio, multi-lingual transcripts, and automated service dispatch.
-            </p>
           </div>
 
           {/* Quick Simulation Trigger Buttons */}

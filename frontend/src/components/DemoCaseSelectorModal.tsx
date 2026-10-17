@@ -91,9 +91,6 @@ export const DemoCaseSelectorModal: React.FC<DemoCaseSelectorModalProps> = ({
                   {sourceCases.length} Scenarios
                 </span>
               </div>
-              <p className="text-xs text-slate-300 mt-0.5 truncate">
-                Pre-configured test complaints showcasing eSahaay safeguards & multi-lingual triage
-              </p>
             </div>
           </div>
           <button

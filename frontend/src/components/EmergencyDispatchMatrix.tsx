@@ -182,9 +182,6 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
               6-Service Triage
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Automatically evaluates threat severity, locates nearest emergency stations, and determines which services must be dispatched.
-          </p>
         </div>
 
         {/* Threat Level Index Box */}
@@ -232,9 +229,9 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
             {locationHint || 'Munirka Metro Station, New Delhi'}
           </span>
         </div>
-        <div className="flex items-center gap-2 shrink-0 text-[11px] text-slate-500 dark:text-slate-400 font-medium">
+        <div className="flex items-center gap-2 shrink-0 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-          <span>Station GPS locations & response ETAs synchronized below</span>
+          <span>Station Network Active</span>
         </div>
       </div>
 
@@ -302,11 +299,6 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
                     )}
                   </div>
                 </div>
-
-                {/* AI Reasoning Description */}
-                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed min-h-[38px]">
-                  {decision.reason}
-                </p>
 
                 {/* Station Location & Response Details Box */}
                 {unit && (
@@ -401,16 +393,11 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
       </div>
 
       {/* Bulk Operator Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2 text-xs text-slate-500 dark:text-slate-400">
-        <span className="flex items-center gap-1.5">
-          <CheckCircle2 className="w-4 h-4 text-teal-600" />
-          <span>Operator protocol: Field dispatches log station GPS coordinates, timestamp, and VHF radio frequency.</span>
-        </span>
-
+      <div className="flex items-center justify-end pt-2">
         <button
           type="button"
           onClick={dispatchAllRecommended}
-          className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-teal-900/20 transition-all flex items-center justify-center gap-1.5 self-start sm:self-auto cursor-pointer"
+          className="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-teal-900/20 transition-all flex items-center justify-center gap-1.5 cursor-pointer"
         >
           <Send className="w-3.5 h-3.5" />
           <span>Dispatch All Recommended Services</span>

@@ -113,9 +113,6 @@ export const SituationalQuestionsCard: React.FC<SituationalQuestionsCardProps> =
               Situation-Aware
             </span>
           </div>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-            Non-delaying, safety-focused clarifying questions adapted to the victim's situation (English & Hindi).
-          </p>
         </div>
 
         <span className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">

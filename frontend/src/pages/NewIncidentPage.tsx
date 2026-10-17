@@ -23,7 +23,6 @@ import {
   Edit3,
   Download,
   Copy,
-  Sparkles,
   MapPin,
   Users,
   Languages,
@@ -476,9 +475,6 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
               <Edit3 className="w-4 h-4 text-teal-600 dark:text-teal-400 shrink-0" />
               <span>Caller Testimony & Live Conversation Feed</span>
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Live victim transcript in any of India's 22 regional languages. Evaluated autonomously top-to-bottom by AI.
-            </p>
           </div>
 
           <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -682,26 +678,19 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
             </div>
           </div>
 
-          {/* Automated AI Status Bar (No click required to analyze) */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-            <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
-              <span>AI analyzes caller speech, questions, and dispatches in the background. Operator only clicks to dispatch.</span>
-            </span>
-
-            <div className="flex items-center gap-2 shrink-0 sm:ml-auto">
-              {loading ? (
-                <div className="px-3.5 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 text-xs font-semibold flex items-center gap-2">
-                  <div className="w-3.5 h-3.5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
-                  <span>AI Analyzing Incident...</span>
-                </div>
-              ) : (
-                <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>AI Live Analysis Active (Autonomous)</span>
-                </div>
-              )}
-            </div>
+          {/* Automated AI Status Bar */}
+          <div className="flex items-center justify-end gap-2 pt-2">
+            {loading ? (
+              <div className="px-3.5 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 text-xs font-semibold flex items-center gap-2">
+                <div className="w-3.5 h-3.5 border-2 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+                <span>Analyzing Incident...</span>
+              </div>
+            ) : (
+              <div className="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Live Analysis Active</span>
+              </div>
+            )}
           </div>
         </form>
       </div>
@@ -747,12 +736,6 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
                 <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 pt-1 leading-relaxed">
                   {analysis.incident_summary}
                 </p>
-                {analysis.urgency_reasons && analysis.urgency_reasons.length > 0 && (
-                  <div className="pt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
-                    <span className="font-semibold text-slate-800 dark:text-slate-200">Assessment Rationale:</span>
-                    <span>{analysis.urgency_reasons.join(' • ')}</span>
-                  </div>
-                )}
               </div>
 
               {/* Actions */}

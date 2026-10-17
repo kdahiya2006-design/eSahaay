@@ -87,22 +87,18 @@ export const App: React.FC = () => {
       case 'new-incident':
         return {
           title: 'Live Helpline Triage & Emergency Console',
-          subtitle: 'Real-time call simulation, 22-language translation, situational questions, and 6-service emergency dispatch.',
         };
       case 'overview':
         return {
           title: 'Triage Dashboard',
-          subtitle: 'Shift summary, pending reviews, and urgency distribution.',
         };
       case 'case-history':
         return {
           title: 'Case History',
-          subtitle: 'Audit log of reviewed helpline cases.',
         };
       case 'evaluation':
         return {
           title: 'Evaluation Dashboard',
-          subtitle: 'Accuracy, confusion matrix, and safety evaluation on synthetic edge cases.',
         };
     }
   };
@@ -130,7 +126,6 @@ export const App: React.FC = () => {
         {/* Sticky Header with Dark Mode Toggle at top right */}
         <Header
           title={meta.title}
-          subtitle={meta.subtitle}
           modeLabel={modeLabel}
           isDemoMode={isDemoMode}
           operatorId={operatorId}
