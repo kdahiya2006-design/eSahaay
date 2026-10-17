@@ -74,80 +74,80 @@ export const EvaluationPage: React.FC = () => {
           {/* Key Metrics Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
             {/* Urgency Classification Accuracy */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
-              <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2 transition-colors">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block">
                 Urgency Triage Accuracy
               </span>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold font-mono text-slate-900">
+                <span className="text-3xl font-bold font-mono text-slate-900 dark:text-white">
                   {metrics.urgency_accuracy}%
                 </span>
-                <span className="text-xs text-slate-600">
+                <span className="text-xs text-slate-500 dark:text-slate-400">
                   ({metrics.total_test_cases} test cases)
                 </span>
               </div>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 Ground-truth exact match across High, Med, Low & Indeterminate
               </p>
             </div>
 
             {/* Incident Category Overlap */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
-              <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2 transition-colors">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block">
                 Category Match Rate
               </span>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold font-mono text-teal-600">
+                <span className="text-3xl font-bold font-mono text-teal-600 dark:text-teal-400">
                   {metrics.category_accuracy}%
                 </span>
-                <span className="text-xs text-teal-700 font-medium">Semantic Match</span>
+                <span className="text-xs text-teal-700 dark:text-teal-300 font-medium">Semantic Match</span>
               </div>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 Stalking, harassment, threats, and medical safety flags
               </p>
             </div>
 
             {/* Critical Under-Triage Risk */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
-              <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2 transition-colors">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block">
                 Under-Triage Error Rate
               </span>
               <div className="flex items-baseline gap-2">
                 <span
                   className={`text-3xl font-bold font-mono ${
-                    metrics.under_triage_count === 0 ? 'text-emerald-800' : 'text-red-600'
+                    metrics.under_triage_count === 0 ? 'text-emerald-700 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'
                   }`}
                 >
                   {metrics.under_triage_rate}%
                 </span>
-                <span className="text-xs font-medium text-slate-600">
+                <span className="text-xs font-medium text-slate-500 dark:text-slate-400">
                   ({metrics.under_triage_count} High-risk missed)
                 </span>
               </div>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 <strong>Critical Safety Metric:</strong> High-risk cases classified as Low/Medium
               </p>
             </div>
 
             {/* Missing Info Detection Rate */}
-            <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-xs space-y-2">
-              <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2 transition-colors">
+              <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider block">
                 Location Gap Detection
               </span>
               <div className="flex items-baseline gap-2">
-                <span className="text-3xl font-bold font-mono text-purple-700">
+                <span className="text-3xl font-bold font-mono text-purple-700 dark:text-purple-400">
                   {metrics.missing_info_detection_rate}%
                 </span>
-                <span className="text-xs text-purple-700 font-medium">Safeguard Check</span>
+                <span className="text-xs text-purple-700 dark:text-purple-300 font-medium">Safeguard Check</span>
               </div>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-slate-600 dark:text-slate-400">
                 Correctly flagging vague landmarks vs confirmed addresses
               </p>
             </div>
           </div>
 
           {/* Urgency Confusion Matrix Visual Table */}
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-xs p-4 sm:p-6 space-y-3 sm:space-y-4">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-4 sm:p-6 space-y-3 sm:space-y-4 transition-colors">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
                 <h3 className="text-xs sm:text-sm font-semibold text-slate-900 tracking-tight">

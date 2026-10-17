@@ -67,9 +67,9 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
     : [];
 
   return (
-    <div className="p-3.5 sm:p-6 md:p-8 space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto animate-fadeIn">
+    <div className="p-3.5 sm:p-6 md:p-8 space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto animate-fadeIn transition-colors">
       {error && (
-        <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-xl break-words">
+        <div className="p-3 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs rounded-xl break-words">
           {error}
         </div>
       )}
@@ -77,86 +77,90 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
       {/* Clean Welcome & Quick Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight">Welcome, Operator</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Here's your shift summary. Review pending cases or start a new triage.</p>
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight">
+            Welcome, Operator
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Shift summary & incoming triage metrics. Review pending cases or start a new triage.
+          </p>
         </div>
         <div className="flex items-center gap-2.5">
           <button
             onClick={fetchOverview}
             disabled={loading}
-            className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 transition-all shadow-xs active:scale-95"
+            className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-750 transition-all shadow-xs active:scale-95 cursor-pointer"
             title="Refresh"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
           <button
             onClick={onNavigateToNew}
-            className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm shadow-md flex items-center gap-2 transition-all active:scale-95"
+            className="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-sm shadow-md flex items-center gap-2 transition-all active:scale-95 cursor-pointer"
           >
             <PlusCircle className="w-4 h-4 shrink-0" />
-            <span>New Triage</span>
+            <span>Live Triage Console</span>
           </button>
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-5">
-        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-xs space-y-2.5 sm:space-y-3">
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5 sm:space-y-3 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider truncate">
-              Total Cases
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider truncate">
+              Total Recorded Cases
             </span>
-            <div className="p-2 bg-slate-100 rounded-lg text-slate-700 shrink-0">
+            <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-700 dark:text-slate-300 shrink-0">
               <FileText className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-slate-900 font-mono">
+            <span className="text-3xl font-bold text-slate-900 dark:text-white font-mono">
               {data?.total_cases ?? 0}
             </span>
           </div>
-          <p className="text-xs text-slate-500 truncate">
-            All analyzed incidents
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+            All analyzed incidents in audit log
           </p>
         </div>
 
-        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-xs space-y-2.5 sm:space-y-3">
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5 sm:space-y-3 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider truncate">
-              Awaiting Review
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider truncate">
+              Awaiting Operator Review
             </span>
-            <div className="p-2 bg-amber-100 rounded-lg text-amber-700 shrink-0">
+            <div className="p-2 bg-amber-100 dark:bg-amber-950/80 rounded-xl text-amber-700 dark:text-amber-300 shrink-0">
               <Clock className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-amber-800 font-mono">
+            <span className="text-3xl font-bold text-amber-800 dark:text-amber-400 font-mono">
               {data?.pending_review ?? 0}
             </span>
-            <span className="text-xs text-amber-800 font-medium">Pending</span>
+            <span className="text-xs text-amber-800 dark:text-amber-300 font-medium">Pending Review</span>
           </div>
-          <p className="text-xs text-slate-500 truncate">
-            Needs operator verification
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+            Needs human operator verification
           </p>
         </div>
 
-        <div className="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-xs space-y-2.5 sm:space-y-3">
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-2.5 sm:space-y-3 transition-colors">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider truncate">
-              Flagged Issues
+            <span className="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider truncate">
+              Flagged Data Gaps
             </span>
-            <div className="p-2 bg-purple-100 rounded-lg text-purple-700 shrink-0">
+            <div className="p-2 bg-purple-100 dark:bg-purple-950/80 rounded-xl text-purple-700 dark:text-purple-300 shrink-0">
               <AlertTriangle className="w-4 h-4" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-bold text-purple-700 font-mono">
+            <span className="text-3xl font-bold text-purple-700 dark:text-purple-400 font-mono">
               {data?.flagged_missing_or_conflict ?? 0}
             </span>
-            <span className="text-xs text-purple-700 font-medium">Flagged</span>
+            <span className="text-xs text-purple-700 dark:text-purple-300 font-medium">Flagged</span>
           </div>
-          <p className="text-xs text-slate-500 truncate">
-            Vague location, gaps, or conflicts
+          <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+            Vague location, gaps, or contradictions
           </p>
         </div>
       </div>
@@ -164,13 +168,13 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
       {/* Urgency Distribution & Visual Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
         {/* Pie Distribution Chart */}
-        <div className="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-3 sm:space-y-4">
+        <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3 sm:space-y-4 transition-colors">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-xs sm:text-sm text-slate-900 tracking-tight truncate">
-              Urgency Distribution
+            <h3 className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight truncate">
+              Urgency Level Distribution
             </h3>
-            <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-medium shrink-0">
-              Demo Data
+            <span className="text-[10px] sm:text-xs px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium shrink-0">
+              Active Cases
             </span>
           </div>
 
@@ -211,42 +215,42 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
         </div>
 
         {/* Recent Analyzed Cases List */}
-        <div className="lg:col-span-2 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-xs space-y-3 sm:space-y-4">
+        <div className="lg:col-span-2 bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-3 sm:space-y-4 transition-colors">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-xs sm:text-sm text-slate-900 tracking-tight">
-              Recent Incidents
+            <h3 className="font-semibold text-xs sm:text-sm text-slate-900 dark:text-white tracking-tight">
+              Recent Helpline Triage Incidents
             </h3>
-            <span className="text-[11px] sm:text-xs text-slate-500">
+            <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
               Showing latest {data?.recent_cases.length || 0}
             </span>
           </div>
 
-          <div className="divide-y divide-slate-100">
+          <div className="divide-y divide-slate-100 dark:divide-slate-800">
             {data?.recent_cases && data.recent_cases.length > 0 ? (
               data.recent_cases.map((c) => (
                 <div
                   key={c.case_id}
                   onClick={() => onSelectCase(c)}
-                  className="py-3 px-2 sm:px-3 flex items-center justify-between gap-3 hover:bg-slate-50/90 active:bg-slate-100 rounded-xl cursor-pointer transition-all group"
+                  className="py-3 px-2 sm:px-3 flex items-center justify-between gap-3 hover:bg-slate-50 dark:hover:bg-slate-800/80 active:bg-slate-100 rounded-xl cursor-pointer transition-all group"
                 >
                   <div className="space-y-1 min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                      <span className="font-mono text-xs font-bold text-slate-800 truncate">
+                      <span className="font-mono text-xs font-bold text-slate-800 dark:text-slate-200 truncate">
                         {c.case_id}
                       </span>
                       <UrgencyBadge
                         urgency={c.review?.reviewed_urgency || c.analysis.provisional_urgency}
                         size="sm"
                       />
-                      <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-sky-800 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-full truncate">
+                      <span className="inline-flex items-center gap-1 text-[10px] sm:text-[11px] font-semibold text-sky-800 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 border border-sky-200 dark:border-sky-800 px-2 py-0.5 rounded-full truncate">
                         <Languages className="w-2.5 h-2.5 text-sky-600" />
                         <span>{c.analysis.detected_language}</span>
                       </span>
-                      <span className="text-[10px] sm:text-[11px] text-slate-600 px-2 py-0.5 rounded bg-slate-100 hidden xs:inline truncate">
+                      <span className="text-[10px] sm:text-[11px] text-slate-600 dark:text-slate-400 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 hidden xs:inline truncate">
                         {c.review?.review_status || 'Pending Review'}
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600 line-clamp-1 truncate break-words">
+                    <p className="text-xs text-slate-600 dark:text-slate-300 line-clamp-1 truncate break-words">
                       "{c.transcript}"
                     </p>
                   </div>
@@ -255,7 +259,7 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
               ))
             ) : (
               <div className="py-8 text-center text-xs text-slate-500">
-                No cases available. Click "New Triage" to start.
+                No cases available. Click "Live Triage Console" to start.
               </div>
             )}
           </div>

@@ -141,3 +141,50 @@ export interface EvaluationMetrics {
   }>;
   evaluated_at: string;
 }
+
+export type DispatchServiceType = 'medical' | 'ambulance' | 'police' | 'fire' | 'ngo' | 'shelter';
+
+export interface DispatchDecision {
+  service: DispatchServiceType;
+  serviceName: string;
+  status: 'RECOMMENDED' | 'STANDBY' | 'NOT_REQUIRED';
+  urgency: 'IMMEDIATE' | 'HIGH' | 'ROUTINE' | 'NONE';
+  reason: string;
+  dispatched: boolean;
+  dispatchedAt?: string;
+  assignedUnit?: string;
+  etaMinutes?: number;
+}
+
+export interface NearbyEmergencyUnit {
+  id: string;
+  serviceType: DispatchServiceType;
+  name: string;
+  unitCode: string;
+  vehicleType: string;
+  distanceKm: number;
+  etaMinutes: number;
+  status: 'available' | 'dispatched' | 'en_route' | 'busy';
+  contactNumber: string;
+  stationName: string;
+  specialization: string;
+}
+
+export interface SituationalQuestion {
+  id: string;
+  category: 'safety' | 'location' | 'medical' | 'perpetrator' | 'general';
+  questionEn: string;
+  questionHi: string;
+  isAsked: boolean;
+  priority: 'critical' | 'high' | 'recommended';
+}
+
+export interface CallSimulationState {
+  status: 'idle' | 'ringing' | 'connected' | 'ended';
+  callerPhone: string;
+  callerLocation: string;
+  callerName?: string;
+  incomingLanguage: string;
+  callDuration: number;
+  scenarioTitle?: string;
+}

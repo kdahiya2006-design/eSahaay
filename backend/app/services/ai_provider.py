@@ -157,7 +157,7 @@ Return ONLY a valid JSON object matching the IncidentAnalysis structure.
             }
         }
         
-        candidate_models = [settings.AI_MODEL, "gemini-3.5-flash", "gemini-flash-lite-latest"]
+        candidate_models = [settings.AI_MODEL, "gemini-2.0-flash", "gemini-1.5-flash", "gemini-2.5-flash"]
         # Remove duplicates while preserving order
         candidate_models = list(dict.fromkeys(candidate_models))
         
@@ -165,7 +165,7 @@ Return ONLY a valid JSON object matching the IncidentAnalysis structure.
         data = None
         used_model = settings.AI_MODEL
         
-        async with httpx.AsyncClient(timeout=30.0) as client:
+        async with httpx.AsyncClient(timeout=8.0) as client:
             for model_name in candidate_models:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={api_key}"
                 try:

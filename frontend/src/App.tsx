@@ -19,6 +19,29 @@ export const App: React.FC = () => {
   const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
+  // Dark Mode State
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      const savedTheme = localStorage.getItem('esahaay_theme');
+      if (savedTheme) {
+        return savedTheme === 'dark';
+      }
+      return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    }
+    return false;
+  });
+
+  // Apply dark mode class to root document element
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('esahaay_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('esahaay_theme', 'light');
+    }
+  }, [isDarkMode]);
+
   // Cross-page case inspection state
   const [activeCaseForInspection, setActiveCaseForInspection] = useState<StoredCase | null>(null);
 
@@ -61,15 +84,15 @@ export const App: React.FC = () => {
 
   const getPageMeta = () => {
     switch (activeTab) {
+      case 'new-incident':
+        return {
+          title: 'Live Helpline Triage & Emergency Console',
+          subtitle: 'Real-time call simulation, 22-language translation, situational questions, and 6-service emergency dispatch.',
+        };
       case 'overview':
         return {
           title: 'Triage Dashboard',
           subtitle: 'Shift summary, pending reviews, and urgency distribution.',
-        };
-      case 'new-incident':
-        return {
-          title: 'New Incident Triage',
-          subtitle: 'Multi-lingual transcript parsing, evidence extraction, and risk assessment.',
         };
       case 'case-history':
         return {
@@ -87,7 +110,7 @@ export const App: React.FC = () => {
   const meta = getPageMeta();
 
   return (
-    <div className="flex h-screen bg-slate-50 text-slate-800 font-sans overflow-hidden">
+    <div className="flex h-screen bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans overflow-hidden transition-colors duration-200">
       {/* Persistent Sidebar (Slide-over on mobile, persistent on desktop) */}
       <Sidebar
         activeTab={activeTab}
@@ -104,18 +127,28 @@ export const App: React.FC = () => {
 
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Sticky Header */}
+        {/* Sticky Header with Dark Mode Toggle at top right */}
         <Header
           title={meta.title}
           subtitle={meta.subtitle}
           modeLabel={modeLabel}
           isDemoMode={isDemoMode}
           operatorId={operatorId}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
           onOpenMobileMenu={() => setMobileMenuOpen(true)}
         />
 
         {/* Scrollable View Area */}
-        <main className="flex-1 overflow-y-auto bg-slate-50/60 pb-12">
+        <main className="flex-1 overflow-y-auto bg-slate-50/60 dark:bg-slate-950/60 pb-12 transition-colors duration-200">
+          {activeTab === 'new-incident' && (
+            <NewIncidentPage
+              key={activeCaseForInspection ? activeCaseForInspection.case_id : 'new-form'}
+              initialCase={activeCaseForInspection ? activeCaseForInspection.analysis : null}
+              initialTranscript={activeCaseForInspection ? activeCaseForInspection.transcript : ''}
+            />
+          )}
+
           {activeTab === 'overview' && (
             <OverviewPage
               onNavigateToNew={() => {
@@ -123,14 +156,6 @@ export const App: React.FC = () => {
                 setActiveTab('new-incident');
               }}
               onSelectCase={handleSelectCaseFromOverview}
-            />
-          )}
-
-          {activeTab === 'new-incident' && (
-            <NewIncidentPage
-              key={activeCaseForInspection ? activeCaseForInspection.case_id : 'new-form'}
-              initialCase={activeCaseForInspection ? activeCaseForInspection.analysis : null}
-              initialTranscript={activeCaseForInspection ? activeCaseForInspection.transcript : ''}
             />
           )}
 

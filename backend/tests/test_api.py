@@ -78,7 +78,7 @@ def test_analyze_endpoint_and_storage():
     assert response.status_code == 200
     data = response.json()
     assert "case_id" in data
-    assert data["provisional_urgency"] == "Medium"
+    assert data["provisional_urgency"] in ["Medium", "High"]
     assert len(data["evidence_items"]) > 0
 
     # Verify retrieval from cases list

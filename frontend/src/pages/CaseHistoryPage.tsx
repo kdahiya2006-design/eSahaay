@@ -115,15 +115,15 @@ export const CaseHistoryPage: React.FC<CaseHistoryPageProps> = ({
   };
 
   return (
-    <div className="p-3.5 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto animate-fadeIn">
+    <div className="p-3.5 sm:p-6 md:p-8 space-y-4 sm:space-y-6 max-w-7xl mx-auto animate-fadeIn transition-colors">
       {/* Header & Controls */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
         <div>
-          <h2 className="text-lg sm:text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <FileText className="w-5 h-5 text-teal-600 shrink-0" />
+          <h2 className="text-lg sm:text-xl font-bold text-slate-900 dark:text-white tracking-tight flex items-center gap-2">
+            <FileText className="w-5 h-5 text-teal-600 dark:text-teal-400 shrink-0" />
             <span>Incident Case History</span>
           </h2>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             Search, filter, and inspect reviewed incident reports persisted in local storage.
           </p>
         </div>
@@ -131,7 +131,7 @@ export const CaseHistoryPage: React.FC<CaseHistoryPageProps> = ({
         <button
           onClick={fetchCases}
           disabled={loading}
-          className="p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-semibold flex items-center justify-center gap-2 self-start sm:self-auto shadow-xs active:scale-95"
+          className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-2 self-start sm:self-auto shadow-xs active:scale-95 cursor-pointer"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
           <span>Refresh Records</span>
@@ -139,7 +139,7 @@ export const CaseHistoryPage: React.FC<CaseHistoryPageProps> = ({
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="bg-white rounded-xl border border-slate-200 p-3.5 sm:p-4 shadow-xs space-y-3">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-3.5 sm:p-4 shadow-xs space-y-3 transition-colors">
         <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-2.5 sm:gap-3">
           <div className="relative flex-1">
             <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5 sm:top-3" />
@@ -148,17 +148,17 @@ export const CaseHistoryPage: React.FC<CaseHistoryPageProps> = ({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by Case ID, keywords, or transcript quotes..."
-              className="w-full pl-9 pr-4 py-2 rounded-lg border border-slate-300 text-xs focus:ring-2 focus:ring-teal-500 outline-hidden bg-slate-50/50 hover:bg-white"
+              className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs focus:ring-2 focus:ring-teal-500 outline-hidden bg-slate-50/50 dark:bg-slate-800 text-slate-900 dark:text-white hover:bg-white dark:hover:bg-slate-750 transition-colors"
             />
           </div>
 
           <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
             <div className="flex items-center gap-1.5 text-xs flex-1 sm:flex-initial">
-              <span className="text-slate-500 font-medium text-[11px]">Urgency:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">Urgency:</span>
               <select
                 value={urgencyFilter}
                 onChange={(e) => setUrgencyFilter(e.target.value)}
-                className="w-full sm:w-auto px-2 py-1.5 rounded-lg border border-slate-300 bg-white text-xs outline-hidden"
+                className="w-full sm:w-auto px-2 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs outline-hidden"
               >
                 <option value="All">All</option>
                 <option value="High">High</option>
@@ -169,11 +169,11 @@ export const CaseHistoryPage: React.FC<CaseHistoryPageProps> = ({
             </div>
 
             <div className="flex items-center gap-1.5 text-xs flex-1 sm:flex-initial">
-              <span className="text-slate-500 font-medium text-[11px]">Status:</span>
+              <span className="text-slate-500 dark:text-slate-400 font-medium text-[11px]">Status:</span>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full sm:w-auto px-2 py-1.5 rounded-lg border border-slate-300 bg-white text-xs outline-hidden"
+                className="w-full sm:w-auto px-2 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs outline-hidden"
               >
                 <option value="All">All</option>
                 <option value="Pending Review">Pending</option>
@@ -185,7 +185,7 @@ export const CaseHistoryPage: React.FC<CaseHistoryPageProps> = ({
 
             <button
               type="submit"
-              className="px-3.5 py-1.5 rounded-lg bg-teal-600 text-white font-semibold text-xs hover:bg-teal-700 active:scale-95 transition-all shadow-xs"
+              className="px-3.5 py-1.5 rounded-xl bg-teal-600 text-white font-semibold text-xs hover:bg-teal-700 active:scale-95 transition-all shadow-xs cursor-pointer"
             >
               Filter
             </button>
@@ -194,10 +194,10 @@ export const CaseHistoryPage: React.FC<CaseHistoryPageProps> = ({
       </div>
 
       {/* Case Table / List */}
-      <div className="bg-white rounded-xl border border-slate-200 shadow-xs overflow-hidden">
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden transition-colors">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs min-w-[620px]">
-            <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 uppercase tracking-wider font-semibold">
+            <thead className="bg-slate-50 dark:bg-slate-800/80 border-b border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 uppercase tracking-wider font-semibold">
               <tr>
                 <th className="py-3 px-4">Case ID</th>
                 <th className="py-3 px-4">Language</th>
@@ -209,16 +209,16 @@ export const CaseHistoryPage: React.FC<CaseHistoryPageProps> = ({
                 <th className="py-3 px-4 text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
               {loading ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-600">
+                  <td colSpan={8} className="py-8 text-center text-slate-500 dark:text-slate-400">
                     Loading case history...
                   </td>
                 </tr>
               ) : cases.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="py-8 text-center text-slate-600">
+                  <td colSpan={8} className="py-8 text-center text-slate-500 dark:text-slate-400">
                     No cases match the filter criteria.
                   </td>
                 </tr>
@@ -230,9 +230,9 @@ export const CaseHistoryPage: React.FC<CaseHistoryPageProps> = ({
                     <tr
                       key={c.case_id}
                       onClick={() => setActiveCase(c)}
-                      className="hover:bg-slate-50/80 cursor-pointer transition-colors group"
+                      className="hover:bg-slate-50/80 dark:hover:bg-slate-800/60 cursor-pointer transition-colors group"
                     >
-                      <td className="py-3 px-4 font-mono font-bold text-slate-800">
+                      <td className="py-3 px-4 font-mono font-bold text-slate-800 dark:text-slate-200">
                         {c.case_id}
                       </td>
                       <td className="py-3 px-4">
@@ -313,7 +313,7 @@ export const CaseHistoryPage: React.FC<CaseHistoryPageProps> = ({
       {/* Case Detail Modal / Drawer */}
       {activeCase && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 animate-fadeIn">
-          <div className="bg-white rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 overflow-hidden flex flex-col max-h-[92vh]">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-3xl w-full shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[92vh]">
             {/* Modal Header */}
             <div className="px-4 sm:px-6 py-3.5 sm:py-4 bg-slate-900 text-white flex items-center justify-between gap-2">
               <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
