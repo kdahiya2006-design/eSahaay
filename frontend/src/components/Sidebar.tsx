@@ -5,9 +5,7 @@ import {
   History,
   BarChart3,
   HeartHandshake,
-  CheckCircle2,
   ChevronRight,
-  LifeBuoy,
   X
 } from 'lucide-react';
 
@@ -128,14 +126,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Status Pill */}
-        <div className="px-5 pt-3">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-slate-800/80 text-[11px] font-medium text-teal-300 border border-teal-500/20">
-            <span className="w-1.5 h-1.5 rounded-full bg-teal-400 animate-pulse"></span>
-            <span>Decision-Support Active</span>
-          </div>
-        </div>
-
         {/* Navigation Sections */}
         <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
           {navSections.map((section) => (
@@ -187,26 +177,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           ))}
         </nav>
-
-        {/* Human in the loop reassurance card */}
-        <div className="p-3.5 m-3 rounded-xl bg-slate-800/60 border border-slate-700/60 text-xs text-slate-300 space-y-1.5">
-          <div className="flex items-center gap-2 text-teal-400 font-semibold text-xs">
-            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-            <span>Operator in Control</span>
-          </div>
-          <p className="text-[11px] text-slate-400 leading-relaxed">
-            AI provides triage recommendations. Trained human operators confirm all decisions.
-          </p>
-        </div>
-
-        {/* Footer System Info */}
-        <div className="p-4 border-t border-slate-800/80 text-[11px] text-slate-400 flex items-center justify-between">
-          <div className="flex items-center gap-1.5">
-            <LifeBuoy className="w-3.5 h-3.5 text-teal-400" />
-            <span>v1.0.0</span>
-          </div>
-          <span className="text-slate-400 font-mono">Hindi / Hinglish / Eng</span>
-        </div>
       </aside>
     </>
   );

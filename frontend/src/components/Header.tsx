@@ -1,8 +1,6 @@
 import React from 'react';
 import {
-  Cpu,
   UserCheck,
-  Sparkles,
   Menu,
   HeartHandshake,
   Sun,
@@ -21,8 +19,6 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   title,
-  modeLabel = 'Demo Mode: Deterministic Engine',
-  isDemoMode = true,
   operatorId = 'OP-Delhi-104',
   isDarkMode = false,
   onToggleDarkMode,
@@ -53,30 +49,8 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: Mode, Operator & Dark Mode Toggle (Top Right Corner) */}
+        {/* Right: Operator & Dark Mode Toggle (Top Right Corner) */}
         <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
-          {/* AI Mode Pill */}
-          <div
-            className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-medium border transition-all ${
-              isDemoMode
-                ? 'bg-amber-50 dark:bg-amber-950/60 text-amber-900 dark:text-amber-300 border-amber-200 dark:border-amber-800'
-                : 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800'
-            }`}
-            title={modeLabel}
-          >
-            {isDemoMode ? (
-              <Cpu className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
-            ) : (
-              <Sparkles className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
-            )}
-            <span className="font-semibold hidden sm:inline">
-              {isDemoMode ? 'Demo Rule Engine' : 'Live Gemini AI'}
-            </span>
-            <span className="font-semibold sm:hidden">
-              {isDemoMode ? 'Demo' : 'Live AI'}
-            </span>
-          </div>
-
           {/* Operator Badge */}
           <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
             <UserCheck className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />

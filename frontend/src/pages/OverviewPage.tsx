@@ -20,6 +20,8 @@ import {
   Legend
 } from 'recharts';
 
+import { DUMMY_OVERVIEW_DATA } from '../data/dashboardData';
+
 interface OverviewPageProps {
   onNavigateToNew: () => void;
   onSelectCase: (caseItem: StoredCase) => void;
@@ -36,19 +38,21 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
   onNavigateToNew,
   onSelectCase,
 }) => {
-  const [data, setData] = useState<OverviewStatistics | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [data, setData] = useState<OverviewStatistics>(DUMMY_OVERVIEW_DATA);
+  const [loading, setLoading] = useState(false);
 
   const fetchOverview = async () => {
     setLoading(true);
-    setError(null);
     try {
       const stats = await api.getOverview();
-      setData(stats);
+      if (stats && (stats.total_cases > 0 || (stats.recent_cases && stats.recent_cases.length > 0))) {
+        setData(stats);
+      } else {
+        setData(DUMMY_OVERVIEW_DATA);
+      }
     } catch (err: any) {
-      console.error(err);
-      setError('Unable to load overview statistics. Backend may be offline.');
+      console.warn('Using dummy overview fallback:', err);
+      setData(DUMMY_OVERVIEW_DATA);
     } finally {
       setLoading(false);
     }
@@ -68,12 +72,6 @@ export const OverviewPage: React.FC<OverviewPageProps> = ({
 
   return (
     <div className="p-3.5 sm:p-6 md:p-8 space-y-5 sm:space-y-6 md:space-y-8 max-w-7xl mx-auto animate-fadeIn transition-colors">
-      {error && (
-        <div className="p-3 bg-red-50 dark:bg-red-950/60 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs rounded-xl break-words">
-          {error}
-        </div>
-      )}
-
       {/* Clean Welcome & Quick Action */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>

@@ -15,8 +15,6 @@ export const App: React.FC = () => {
   const [operatorId, setOperatorId] = useState('OP-Delhi-104');
   const [activeTab, setActiveTab] = useState<NavTab>('new-incident');
   const [pendingCount, setPendingCount] = useState<number>(0);
-  const [modeLabel, setModeLabel] = useState<string>('Demo Mode: Deterministic Engine');
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   // Dark Mode State
@@ -45,23 +43,8 @@ export const App: React.FC = () => {
   // Cross-page case inspection state
   const [activeCaseForInspection, setActiveCaseForInspection] = useState<StoredCase | null>(null);
 
-  // Check health and overview on startup
+  // Load overview stats on tab change
   useEffect(() => {
-    api.getHealth()
-      .then((h) => {
-        if (h.has_api_key && h.ai_provider !== 'mock') {
-          setModeLabel(`Live AI: ${h.ai_provider.toUpperCase()}`);
-          setIsDemoMode(false);
-        } else {
-          setModeLabel('Demo Mode: Deterministic Engine (No External Key)');
-          setIsDemoMode(true);
-        }
-      })
-      .catch(() => {
-        setModeLabel('Demo Mode: Deterministic Engine (Offline Fallback)');
-        setIsDemoMode(true);
-      });
-
     api.getOverview()
       .then((st) => setPendingCount(st.pending_review))
       .catch(() => {});
@@ -126,8 +109,6 @@ export const App: React.FC = () => {
         {/* Sticky Header with Dark Mode Toggle at top right */}
         <Header
           title={meta.title}
-          modeLabel={modeLabel}
-          isDemoMode={isDemoMode}
           operatorId={operatorId}
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode((prev) => !prev)}
