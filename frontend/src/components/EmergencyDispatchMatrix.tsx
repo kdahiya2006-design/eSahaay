@@ -13,12 +13,12 @@ import {
   AlertTriangle,
   MapPin,
   Navigation,
-  Clock,
-  Map
+  Clock
 } from 'lucide-react';
 import type { DispatchDecision, DispatchServiceType, UrgencyLevel, NearbyEmergencyUnit } from '../types';
 import { ringtoneService } from '../services/ringtoneService';
 import { dispatchEngine } from '../services/dispatchEngine';
+import { LiveLocationMapCanvas } from './LiveLocationMapCanvas';
 
 export interface EmergencyDispatchMatrixProps {
   threatScore: number;
@@ -223,32 +223,13 @@ export const EmergencyDispatchMatrix: React.FC<EmergencyDispatchMatrixProps> = (
         </div>
       </div>
 
-      {/* Geotagged Service Radius Anchor Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 text-xs">
-        <div className="flex items-center gap-2 min-w-0">
-          <MapPin className="w-4 h-4 text-rose-500 shrink-0 animate-bounce" />
-          <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">Caller Location Anchor:</span>
-          <span className="font-bold text-slate-900 dark:text-white truncate">
-            {locationHint || 'Munirka Metro Station, New Delhi'}
-          </span>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <div className="flex items-center gap-2 text-[11px] text-emerald-700 dark:text-emerald-400 font-medium">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Station Network Active</span>
-          </div>
-          {onOpenLiveMap && (
-            <button
-              type="button"
-              onClick={onOpenLiveMap}
-              className="ml-1 px-2.5 py-1 rounded-lg bg-teal-50 dark:bg-teal-950/80 hover:bg-teal-100 dark:hover:bg-teal-900 text-teal-700 dark:text-teal-300 font-semibold text-[11px] flex items-center gap-1.5 border border-teal-200 dark:border-teal-800 transition-all cursor-pointer active:scale-95"
-            >
-              <Map className="w-3.5 h-3.5" />
-              <span>Live Fleet Map</span>
-            </button>
-          )}
-        </div>
-      </div>
+      {/* Geotagged Live Location & Integrated Fleet Tracking Map */}
+      <LiveLocationMapCanvas
+        locationName={locationHint || 'Munirka Metro Station, New Delhi'}
+        decisions={decisions}
+        onToggleDispatch={toggleDispatch}
+        onOpenFullScreenMap={onOpenLiveMap}
+      />
 
       {/* 6 Services Decision Grid with Integrated Station Locations */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
