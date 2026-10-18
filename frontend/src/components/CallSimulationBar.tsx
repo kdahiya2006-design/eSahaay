@@ -326,10 +326,10 @@ export const CallSimulationBar: React.FC<CallSimulationBarProps> = ({
 
       {/* 3. When Idle: Simulator Controls & Ringtone Test Bar */}
       {(callState.status === 'idle' || callState.status === 'ended') && (
-        <div className="p-4 sm:p-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-          <div className="space-y-1">
+        <div className="p-2.5 sm:p-3 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2.5">
+          <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
+              <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
                 <PhoneCall className="w-4 h-4" />
               </div>
               <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">

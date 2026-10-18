@@ -121,7 +121,7 @@ export const App: React.FC = () => {
         />
 
         {/* Scrollable View Area */}
-        <main className="flex-1 overflow-y-auto bg-slate-50/60 dark:bg-slate-950/60 pb-12 transition-colors duration-200">
+        <main className="flex-1 overflow-y-auto bg-slate-50/60 dark:bg-slate-950/60 pb-4 transition-colors duration-200">
           {activeTab === 'new-incident' && (
             <NewIncidentPage
               key={activeCaseForInspection ? activeCaseForInspection.case_id : 'new-form'}
