@@ -5,23 +5,20 @@ import type {
   HumanReviewUpdate
 } from '../types';
 import { api } from '../services/api';
-import { UrgencyBadge } from '../components/UrgencyBadge';
 import { EmergencyBanner } from '../components/EmergencyBanner';
 import { HumanReviewModal } from '../components/HumanReviewModal';
 import { DemoCaseSelectorModal } from '../components/DemoCaseSelectorModal';
-import { CallSimulationBar } from '../components/CallSimulationBar';
+import { CallSimulationBar, CALLER_PRESETS } from '../components/CallSimulationBar';
 import { EmergencyDispatchMatrix } from '../components/EmergencyDispatchMatrix';
 import { SituationalQuestionsCard } from '../components/SituationalQuestionsCard';
 import { dispatchEngine } from '../services/dispatchEngine';
 import { translateToEnglishAndHindi, fetchLiveEnglishTranslation } from '../data/languages';
 import { SYNTHETIC_DEMO_CASES } from '../data/demoCases';
 import {
-  BookOpen,
   Trash2,
   CheckCircle2,
   ShieldAlert,
   Edit3,
-  Download,
   Copy,
   MapPin,
   Users,
@@ -91,6 +88,8 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
   // Call Simulation & Emergency Advisory State
   const [isSimulatedCallActive, setIsSimulatedCallActive] = useState(false);
   const [isAdvisoryDismissed, setIsAdvisoryDismissed] = useState(false);
+  const [selectedScenario, setSelectedScenario] = useState<any>(SYNTHETIC_DEMO_CASES[0]);
+  const triggerIncomingCallRef = useRef<((scenario?: any) => void) | null>(null);
 
   // Speech Recognition
   const [isListening, setIsListening] = useState(false);
@@ -400,6 +399,7 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
+    setSelectedScenario(demo);
     const lang = demo.language_hint || 'Auto-detect';
     const time = demo.incident_time_hint || '';
     const notes = demo.operator_notes || '';
@@ -409,8 +409,19 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
     setOperatorNotes(notes);
     setCurrentReview(null);
 
+    const preset = CALLER_PRESETS[demo.id];
+    const loc = preset?.location || locationHint;
+    if (preset?.location) {
+      setLocationHint(preset.location);
+    }
+
     // AI automatically analyzes the loaded scenario top-to-bottom without clicking
-    executeAnalysis(demo.transcript, lang, time, notes, locationHint);
+    executeAnalysis(demo.transcript, lang, time, notes, loc);
+  };
+
+  const handleSimulateCallFromModal = (demo: DemoCase) => {
+    handleSelectDemo(demo);
+    triggerIncomingCallRef.current?.(demo);
   };
 
   const handleClear = () => {
@@ -467,33 +478,6 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
     }
   };
 
-  const exportJSON = () => {
-    if (!analysis) return;
-    const blob = new Blob(
-      [JSON.stringify({ analysis, review: currentReview, transcript, emergencyMeasurement }, null, 2)],
-      { type: 'application/json' }
-    );
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `eSahaay_Report_${analysis.case_id}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  const copySummary = () => {
-    if (!analysis) return;
-    const text = `eSahaay Triage Report [${analysis.case_id}]
-Provisional Urgency: ${currentReview?.reviewed_urgency || analysis.provisional_urgency}
-Threat Score: ${emergencyMeasurement.threatScore}/100
-Primary Dispatch: ${emergencyMeasurement.primaryService.toUpperCase()}
-Summary: ${analysis.incident_summary}
-Location: ${analysis.location.mentioned_location || locationHint}
-Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'RECOMMENDED').map(d => d.serviceName).join(', ')}`;
-    navigator.clipboard.writeText(text);
-    alert('Case summary copied to clipboard!');
-  };
-
   return (
     <div className="p-3 sm:p-4 space-y-2.5 sm:space-y-3 max-w-7xl mx-auto animate-fadeIn transition-colors duration-200">
       {/* 1. Emergency Protocol Banner */}
@@ -516,13 +500,16 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
         onCallEnded={handleCallEnded}
         isCallActive={isSimulatedCallActive}
         activeLanguage={languageHint}
+        onOpenLoadScenarios={() => setDemoModalOpen(true)}
+        selectedScenario={selectedScenario}
+        triggerIncomingCallRef={triggerIncomingCallRef}
       />
 
-      {/* Location on Left-Hand Side just below Simulator + Quick Actions Toolbar */}
-      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
-        {/* Left Hand Side: Victim Location */}
-        <div className="flex-1 max-w-lg">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-2xs">
+      {/* Top Metadata Bar: Location (Editable) + Spoken Language + Involved Person + Categories + Controls */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-2.5 sm:p-3 transition-colors">
+        <div className="flex flex-wrap items-center justify-between gap-2.5 sm:gap-3 text-xs">
+          {/* 1. Location Input */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 min-w-[200px] sm:min-w-[240px] flex-1 max-w-sm">
             <MapPin className="w-3.5 h-3.5 text-rose-500 shrink-0" />
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 shrink-0">
               Location:
@@ -535,44 +522,96 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
               className="text-xs bg-transparent text-slate-900 dark:text-white font-medium outline-hidden w-full placeholder:text-slate-400 dark:placeholder:text-slate-500"
             />
           </div>
-        </div>
 
-        {/* Right Hand Side: Action Controls & Status */}
-        <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
-          <button
-            type="button"
-            onClick={() => setDemoModalOpen(true)}
-            className="px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900 text-xs font-semibold flex items-center gap-1.5 transition-colors shadow-2xs active:scale-95 cursor-pointer"
-          >
-            <BookOpen className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
-            <span>Load Scenarios</span>
-          </button>
+          {/* 2. Spoken Language */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 shrink-0">
+            <Languages className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400 shrink-0" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Spoken Language:
+            </span>
+            <span className="font-bold text-slate-900 dark:text-white">
+              {analysis?.detected_language || languageHint || 'Hinglish'}
+            </span>
+            <span className="text-[10px] text-teal-600 dark:text-teal-400 font-semibold bg-teal-50 dark:bg-teal-950/80 px-1.5 py-0.5 rounded-md border border-teal-200/60 dark:border-teal-800/60">
+              {analysis?.detected_language_script ? `${analysis.detected_language_script} Script` : 'Latin Script'}
+            </span>
+          </div>
 
-          <button
-            type="button"
-            onClick={handleClear}
-            className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 text-xs transition-colors active:scale-95 cursor-pointer"
-            title="Clear all"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {/* 3. Involved Person */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 shrink-0">
+            <Users className="w-3.5 h-3.5 text-sky-500 shrink-0" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Involved Person:
+            </span>
+            <span className="font-bold text-slate-900 dark:text-white">
+              {analysis?.people_or_relationships || analysis?.key_entities?.[0] || 'Unknown Individual'}
+            </span>
+            <span className="text-[10px] text-slate-400 dark:text-slate-500 hidden md:inline">
+              (Explicitly Stated)
+            </span>
+          </div>
 
-          {loading ? (
-            <div className="px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 text-xs font-semibold flex items-center gap-1.5">
-              <div className="w-3 h-3 border-2 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
-              <span>Analyzing...</span>
+          {/* 4. Incident Categories */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/60 shrink-0">
+            <ShieldAlert className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              Categories:
+            </span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {(currentReview?.reviewed_categories || (analysis?.incident_categories && analysis.incident_categories.length > 0
+                ? analysis.incident_categories
+                : ['Active Intrusion / Violence Risk', 'Physical Safety Threat'])
+              ).slice(0, 2).map((cat, idx) => (
+                <span
+                  key={idx}
+                  className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-200/70 dark:bg-slate-700/70 text-slate-800 dark:text-slate-200"
+                >
+                  {cat}
+                </span>
+              ))}
             </div>
-          ) : (
+          </div>
+
+          {/* Right Hand Controls: Clear, Review & Live Status */}
+          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+            {analysis && (
+              <button
+                type="button"
+                onClick={() => setReviewModalOpen(true)}
+                className="px-2.5 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900 text-xs font-semibold flex items-center gap-1 transition-colors active:scale-95 cursor-pointer"
+                title="Open Human Operator Review"
+              >
+                <Edit3 className="w-3 h-3" />
+                <span className="hidden sm:inline">Review</span>
+              </button>
+            )}
+
             <button
               type="button"
-              onClick={() => handleAnalyze()}
-              className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 hover:bg-emerald-100 dark:hover:bg-emerald-900 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-              title="Click to re-analyze"
+              onClick={handleClear}
+              className="p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/50 text-xs transition-colors active:scale-95 cursor-pointer"
+              title="Clear all"
             >
-              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Live Analysis Active</span>
+              <Trash2 className="w-4 h-4" />
             </button>
-          )}
+
+            {loading ? (
+              <div className="px-2.5 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/70 border border-teal-200 dark:border-teal-800 text-teal-700 dark:text-teal-300 text-xs font-semibold flex items-center gap-1.5">
+                <div className="w-3 h-3 border-2 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+                <span>Analyzing...</span>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => handleAnalyze()}
+                className="px-2.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 hover:bg-emerald-100 dark:hover:bg-emerald-900 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
+                title="Click to re-analyze"
+              >
+                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Live Analysis Active</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -737,133 +776,13 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
         }}
       />
 
-      {/* 7. Full Incident Overview & Triage Metadata Bar */}
-      {analysis && (
-        <div className="space-y-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs p-4 sm:p-6 transition-colors">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-              <div className="space-y-1">
-                <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
-                  <span className="font-mono text-xs sm:text-sm font-bold text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2.5 py-0.5 rounded-md">
-                    Case {analysis.case_id}
-                  </span>
-                  <div className="flex items-center gap-1.5 sm:gap-2">
-                    <span className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">Provisional:</span>
-                    <UrgencyBadge urgency={analysis.provisional_urgency} size="sm" />
-                  </div>
-                  {currentReview && (
-                    <div className="flex items-center gap-1.5 bg-teal-50 dark:bg-teal-950 text-teal-900 dark:text-teal-200 border border-teal-200 dark:border-teal-800 px-2.5 py-0.5 rounded-full text-xs font-semibold">
-                      <CheckCircle2 className="w-3.5 h-3.5 text-teal-600" />
-                      <span>Operator Reviewed: {currentReview.reviewed_urgency}</span>
-                    </div>
-                  )}
-                </div>
-                <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 pt-1 leading-relaxed">
-                  {analysis.incident_summary}
-                </p>
-              </div>
-
-              {/* Actions */}
-              <div className="shrink-0 flex flex-wrap items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => setReviewModalOpen(true)}
-                  className="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 active:scale-95 text-white text-xs font-semibold shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>{currentReview ? 'Edit Operator Review' : 'Human Operator Review'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={copySummary}
-                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs transition-colors active:scale-95 cursor-pointer"
-                  title="Copy Report Summary"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={exportJSON}
-                  className="p-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs transition-colors active:scale-95 cursor-pointer"
-                  title="Export JSON"
-                >
-                  <Download className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-
-            {/* Quick Meta Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 pt-3 sm:pt-4 text-xs">
-              <div className="space-y-0.5">
-                <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1 text-[11px] font-medium">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  Location:
-                </span>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
-                  {analysis.location.mentioned_location || locationHint}
-                </p>
-                <span
-                  className={`inline-block text-[10px] px-1.5 py-0.2 rounded font-medium ${
-                    analysis.location.is_vague_or_incomplete
-                      ? 'bg-amber-100 dark:bg-amber-950 text-amber-900 dark:text-amber-300'
-                      : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300'
-                  }`}
-                >
-                  {analysis.location.confidence}
-                </span>
-              </div>
-
-              <div className="space-y-0.5">
-                <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1 text-[11px] font-medium">
-                  <Languages className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  Spoken Language:
-                </span>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
-                  {analysis.detected_language}
-                </p>
-                <span className="text-[10px] text-teal-700 dark:text-teal-400 font-medium block">
-                  {analysis.detected_language_script ? `${analysis.detected_language_script} Script` : 'Tri-Lingual'}
-                </span>
-              </div>
-
-              <div className="space-y-0.5">
-                <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1 text-[11px] font-medium">
-                  <Users className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  Involved Person:
-                </span>
-                <p className="font-semibold text-slate-800 dark:text-slate-200 truncate">
-                  {analysis.people_or_relationships || 'Unknown Individual'}
-                </p>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400 block">Explicitly Stated</span>
-              </div>
-
-              <div className="space-y-0.5">
-                <span className="text-slate-500 dark:text-slate-400 flex items-center gap-1 text-[11px] font-medium">
-                  <ShieldAlert className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  Categories:
-                </span>
-                <div className="flex flex-wrap gap-1 mt-0.5">
-                  {(currentReview?.reviewed_categories || analysis.incident_categories).map((cat) => (
-                    <span
-                      key={cat}
-                      className="px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
-                    >
-                      {cat}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Demo Selector Modal */}
       <DemoCaseSelectorModal
         isOpen={demoModalOpen}
         onClose={() => setDemoModalOpen(false)}
         demoCases={demoCases}
         onSelectCase={handleSelectDemo}
+        onSimulateCall={handleSimulateCallFromModal}
       />
 
       {/* Human Review Modal */}

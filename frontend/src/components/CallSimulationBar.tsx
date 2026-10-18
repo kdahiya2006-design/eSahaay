@@ -6,7 +6,7 @@ import {
   VolumeX,
   Radio,
   Clock,
-  Sparkles,
+  BookOpen,
   ShieldAlert,
   Flame,
   Activity,
@@ -21,7 +21,31 @@ export interface CallSimulationBarProps {
   onCallEnded: () => void;
   isCallActive?: boolean;
   activeLanguage?: string;
+  onOpenLoadScenarios?: () => void;
+  selectedScenario?: any;
+  triggerIncomingCallRef?: React.MutableRefObject<((scenario?: any) => void) | null>;
 }
+
+export const CALLER_PRESETS: Record<string, { name: string; phone: string; location: string }> = {
+  'DEMO-001': { name: 'Priya Verma', phone: '+91 98101 23456', location: 'Near North Campus, Delhi' },
+  'DEMO-002': { name: 'Ananya Verma', phone: '+91 97182 34109', location: 'Rajiv Chowk Metro Gate 4, New Delhi' },
+  'DEMO-003': { name: 'Rimi Banerjee', phone: '+91 98310 99421', location: 'Salt Lake Karunamoyee Bus Stand, Kolkata' },
+  'DEMO-004': { name: 'Sneha Mehra', phone: '+91 98220 54321', location: 'Near Swargate Bus Stand, Pune' },
+  'DEMO-005': { name: 'Selvi Murugan', phone: '+91 98401 67890', location: 'Koyambedu Bus Terminal, Chennai' },
+  'DEMO-006': { name: 'Bhavana Reddy', phone: '+91 98490 12345', location: 'Madhapur Metro Station, Hyderabad' },
+  'DEMO-007': { name: 'Harpreet Kaur', phone: '+91 98140 98765', location: 'Model Town Market, Ludhiana' },
+  'DEMO-008': { name: 'Dhara Patel', phone: '+91 98250 87654', location: 'Navrangpura College Area, Ahmedabad' },
+  'DEMO-009': { name: 'Nisha Singh', phone: '+91 98112 34567', location: 'Red Building near Metro, Delhi' },
+  'DEMO-010': { name: 'Pooja Sharma', phone: '+91 98114 29081', location: 'Flat 402, Sector 18, Noida' },
+  'DEMO-011': { name: 'Komal Gupta', phone: '+91 98710 45678', location: 'Sector 14 Bus Stop, Gurgaon' },
+  'DEMO-012': { name: 'Meenakshi Iyer', phone: '+91 98200 32109', location: 'Metro Platform 2, New Delhi' },
+  'sc-1': { name: 'Pooja Sharma', phone: '+91 98114 29081', location: 'Flat 402, Sector 18, Noida' },
+  'sc-2': { name: 'Ananya Verma', phone: '+91 97182 34109', location: 'Rajiv Chowk Metro Gate 4, New Delhi' },
+  'sc-3': { name: 'Sunita Mehra', phone: '+91 98103 88120', location: 'Near Hauz Khas Market, New Delhi' },
+  'sc-4': { name: 'Deepa Roy', phone: '+91 98301 77214', location: 'Ground Floor Market Building, Munirka, Delhi' },
+  'sc-5': { name: 'Kavita Devi', phone: '+91 99120 44510', location: 'Near Anand Vihar Bus Terminal, Delhi' },
+  'sc-6': { name: 'Rimi Banerjee', phone: '+91 98310 99421', location: 'Salt Lake Karunamoyee Bus Stand, Kolkata' },
+};
 
 interface PreconfiguredCallScenario {
   id: string;
@@ -114,6 +138,9 @@ const CALL_SCENARIOS: PreconfiguredCallScenario[] = [
 export const CallSimulationBar: React.FC<CallSimulationBarProps> = ({
   onCallAccepted,
   onCallEnded,
+  onOpenLoadScenarios,
+  selectedScenario,
+  triggerIncomingCallRef,
 }) => {
   const [callState, setCallState] = useState<CallSimulationState>({
     status: 'idle',
@@ -127,7 +154,12 @@ export const CallSimulationBar: React.FC<CallSimulationBarProps> = ({
 
   const [selectedScenarioId, setSelectedScenarioId] = useState<string>('sc-1');
   const [isMuted, setIsMuted] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
+
+  useEffect(() => {
+    if (triggerIncomingCallRef) {
+      triggerIncomingCallRef.current = (sc?: any) => triggerIncomingCall(sc);
+    }
+  });
 
   // Call duration timer
   useEffect(() => {
@@ -149,25 +181,36 @@ export const CallSimulationBar: React.FC<CallSimulationBarProps> = ({
     };
   }, []);
 
-  const triggerIncomingCall = (scenario: PreconfiguredCallScenario) => {
+  const triggerIncomingCall = (scenario?: any) => {
+    const sc = scenario || selectedScenario || CALL_SCENARIOS[0];
+    const preset = CALLER_PRESETS[sc.id] || {
+      name: sc.callerName || 'Anonymous Citizen',
+      phone: sc.callerPhone || '+91 98114 29081',
+      location: sc.callerLocation || sc.location || 'Munirka Metro Cell #04, New Delhi',
+    };
+
     ringtoneService.startRingtone();
     setCallState({
       status: 'ringing',
-      callerPhone: scenario.callerPhone,
-      callerLocation: scenario.callerLocation,
-      callerName: scenario.callerName,
-      incomingLanguage: scenario.languageHint,
+      callerPhone: sc.callerPhone || preset.phone,
+      callerLocation: sc.callerLocation || preset.location,
+      callerName: sc.callerName || preset.name,
+      incomingLanguage: sc.languageHint || sc.language_hint || 'Hinglish',
       callDuration: 0,
-      scenarioTitle: scenario.title,
+      scenarioTitle: sc.title || 'Helpline Emergency Call',
     });
-    setSelectedScenarioId(scenario.id);
-    setDropdownOpen(false);
+    setSelectedScenarioId(sc.id);
   };
 
   const handleAnswerCall = () => {
     ringtoneService.stopRingtone();
     ringtoneService.playDispatchSound();
-    const scenario = CALL_SCENARIOS.find((s) => s.id === selectedScenarioId) || CALL_SCENARIOS[0];
+    const sc = selectedScenario || CALL_SCENARIOS.find((s) => s.id === selectedScenarioId) || CALL_SCENARIOS[0];
+    const preset = CALLER_PRESETS[sc.id] || {
+      name: sc.callerName || 'Anonymous Citizen',
+      phone: sc.callerPhone || '+91 98114 29081',
+      location: sc.callerLocation || sc.location || 'Munirka Metro Cell #04, New Delhi',
+    };
 
     setCallState((prev) => ({
       ...prev,
@@ -175,7 +218,11 @@ export const CallSimulationBar: React.FC<CallSimulationBarProps> = ({
       callDuration: 1,
     }));
 
-    onCallAccepted(scenario.transcript, scenario.languageHint, scenario.callerLocation);
+    onCallAccepted(
+      sc.transcript,
+      sc.languageHint || sc.language_hint || 'Hinglish',
+      sc.callerLocation || preset.location
+    );
   };
 
   const handleDeclineCall = () => {
@@ -361,68 +408,29 @@ export const CallSimulationBar: React.FC<CallSimulationBarProps> = ({
             {/* Direct Instant Ring Button */}
             <button
               type="button"
-              onClick={() => triggerIncomingCall(CALL_SCENARIOS[0])}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-500 hover:to-sky-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-teal-900/20 flex items-center gap-2 transition-all"
+              onClick={() => triggerIncomingCall(selectedScenario || CALL_SCENARIOS[0])}
+              className="px-4 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-500 hover:to-sky-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-teal-900/20 flex items-center gap-2 transition-all cursor-pointer"
+              title={selectedScenario ? `Simulate call for: ${selectedScenario.title}` : 'Simulate incoming emergency helpline call'}
             >
               <PhoneCall className="w-3.5 h-3.5 animate-pulse" />
               <span>Simulate Incoming Emergency Call</span>
+              {selectedScenario && (
+                <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-mono hidden md:inline truncate max-w-[130px]">
+                  {selectedScenario.title}
+                </span>
+              )}
             </button>
 
-            {/* Scenario Picker Dropdown Button */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs"
-              >
-                <Sparkles className="w-3.5 h-3.5 text-teal-600" />
-                <span>Select Scenario ({CALL_SCENARIOS.length})</span>
-              </button>
-
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl p-2 z-50 space-y-1 animate-fadeIn">
-                  <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300">
-                    Pick Simulated Incoming Helpline Call:
-                  </div>
-                  <div className="max-h-72 overflow-y-auto space-y-1 p-1">
-                    {CALL_SCENARIOS.map((sc) => {
-                      const Icon = sc.icon;
-                      return (
-                        <button
-                          key={sc.id}
-                          type="button"
-                          onClick={() => triggerIncomingCall(sc)}
-                          className="w-full text-left p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors flex items-start gap-2.5 group cursor-pointer"
-                        >
-                          <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950 text-teal-700 dark:text-teal-300 shrink-0 mt-0.5 group-hover:scale-105 transition-transform">
-                            <Icon className="w-4 h-4" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                                {sc.title}
-                              </span>
-                              <span
-                                className={`text-[10px] font-bold px-1.5 py-0.2 rounded shrink-0 ${
-                                  sc.urgency === 'Critical'
-                                    ? 'bg-red-100 dark:bg-red-950 text-red-700 dark:text-red-300'
-                                    : 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
-                                }`}
-                              >
-                                {sc.urgency}
-                              </span>
-                            </div>
-                            <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                              {sc.callerLocation} • {sc.languageHint}
-                            </p>
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
+            {/* Load Scenarios Button (replaces the old select scenario dropdown) */}
+            <button
+              type="button"
+              onClick={onOpenLoadScenarios}
+              className="px-3.5 py-2 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
+              title="Select a scenario from the library to simulate"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
+              <span>Load Scenarios</span>
+            </button>
           </div>
         </div>
       )}
