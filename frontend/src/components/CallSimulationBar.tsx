@@ -373,62 +373,56 @@ export const CallSimulationBar: React.FC<CallSimulationBarProps> = ({
 
       {/* 3. When Idle: Simulator Controls & Ringtone Test Bar */}
       {(callState.status === 'idle' || callState.status === 'ended') && (
-        <div className="p-2.5 sm:p-3 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-2.5">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800">
-                <PhoneCall className="w-4 h-4" />
-              </div>
-              <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white tracking-tight">
-                Helpline Call Simulator & Ringtone Dispatch Console
-              </h3>
-              <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                Ready for Calls
-              </span>
+        <div className="p-2 sm:px-3 sm:py-2.5 flex items-center justify-between gap-2 sm:gap-3 overflow-x-auto">
+          {/* Left: Title & Status */}
+          <div className="flex items-center gap-2 shrink-0">
+            <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 shrink-0">
+              <PhoneCall className="w-3.5 h-3.5" />
             </div>
+            <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight whitespace-nowrap">
+              Helpline Call Simulator & Dispatch Console
+            </h3>
+            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 whitespace-nowrap">
+              Ready for Calls
+            </span>
           </div>
 
-          {/* Quick Simulation Trigger Buttons */}
-          <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+          {/* Quick Simulation Trigger Buttons - strictly linear on single row */}
+          <div className="flex items-center gap-2 shrink-0 flex-nowrap ml-auto">
             {/* Sound Mute Toggle */}
             <button
               type="button"
               onClick={toggleMute}
-              className={`p-2 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors ${
+              className={`px-2.5 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-colors whitespace-nowrap cursor-pointer ${
                 isMuted
                   ? 'bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800'
                   : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-700 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
               title={isMuted ? 'Ringtone sound is Muted' : 'Ringtone sound is Audible'}
             >
-              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-teal-600" />}
-              <span className="hidden sm:inline">{isMuted ? 'Ringtone Muted' : 'Ringtone ON'}</span>
+              {isMuted ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5 text-teal-600" />}
+              <span className="text-xs">{isMuted ? 'Ringtone Muted' : 'Ringtone ON'}</span>
             </button>
 
             {/* Direct Instant Ring Button */}
             <button
               type="button"
               onClick={() => triggerIncomingCall(selectedScenario || CALL_SCENARIOS[0])}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-500 hover:to-sky-500 active:scale-95 text-white font-bold text-xs shadow-md shadow-teal-900/20 flex items-center gap-2 transition-all cursor-pointer"
-              title={selectedScenario ? `Simulate call for: ${selectedScenario.title}` : 'Simulate incoming emergency helpline call'}
+              className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-teal-600 to-sky-600 hover:from-teal-500 hover:to-sky-500 active:scale-95 text-white font-bold text-xs shadow-xs flex items-center gap-1.5 transition-all cursor-pointer whitespace-nowrap"
+              title={selectedScenario ? `Simulate call: ${selectedScenario.title}` : 'Simulate incoming emergency helpline call'}
             >
-              <PhoneCall className="w-3.5 h-3.5 animate-pulse" />
+              <PhoneCall className="w-3.5 h-3.5 animate-pulse shrink-0" />
               <span>Simulate Incoming Emergency Call</span>
-              {selectedScenario && (
-                <span className="text-[10px] bg-white/20 px-1.5 py-0.5 rounded-md font-mono hidden md:inline truncate max-w-[130px]">
-                  {selectedScenario.title}
-                </span>
-              )}
             </button>
 
-            {/* Load Scenarios Button (replaces the old select scenario dropdown) */}
+            {/* Load Scenarios Button */}
             <button
               type="button"
               onClick={onOpenLoadScenarios}
-              className="px-3.5 py-2 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer"
+              className="px-3 py-1.5 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-950/60 text-teal-800 dark:text-teal-300 hover:bg-teal-100 dark:hover:bg-teal-900 text-xs font-semibold flex items-center gap-1.5 transition-all shadow-xs active:scale-95 cursor-pointer whitespace-nowrap"
               title="Select a scenario from the library to simulate"
             >
-              <BookOpen className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400" />
+              <BookOpen className="w-3.5 h-3.5 text-teal-700 dark:text-teal-400 shrink-0" />
               <span>Load Scenarios</span>
             </button>
           </div>
