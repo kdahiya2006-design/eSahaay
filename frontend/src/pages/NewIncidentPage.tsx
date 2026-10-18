@@ -13,7 +13,7 @@ import { CallSimulationBar } from '../components/CallSimulationBar';
 import { EmergencyDispatchMatrix } from '../components/EmergencyDispatchMatrix';
 import { SituationalQuestionsCard } from '../components/SituationalQuestionsCard';
 import { dispatchEngine } from '../services/dispatchEngine';
-import { translateToEnglishAndHindi } from '../data/languages';
+import { translateToEnglishAndHindi, fetchLiveEnglishTranslation } from '../data/languages';
 import { SYNTHETIC_DEMO_CASES } from '../data/demoCases';
 import {
   BookOpen,
@@ -88,8 +88,9 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
   const [demoCases, setDemoCases] = useState<DemoCase[]>(SYNTHETIC_DEMO_CASES);
   const [currentReview, setCurrentReview] = useState<HumanReviewUpdate | null>(null);
 
-  // Call Simulation State
+  // Call Simulation & Emergency Advisory State
   const [isSimulatedCallActive, setIsSimulatedCallActive] = useState(false);
+  const [isAdvisoryDismissed, setIsAdvisoryDismissed] = useState(false);
 
   // Speech Recognition
   const [isListening, setIsListening] = useState(false);
@@ -118,16 +119,51 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
   // English Translation state & speech synthesis
   const [isPlayingEnglish, setIsPlayingEnglish] = useState(false);
   const [copiedEnglish, setCopiedEnglish] = useState(false);
+  const [liveEnglishTranslation, setLiveEnglishTranslation] = useState<string>(() => {
+    const initialText = initialTranscript || (initialCase ? '' : SYNTHETIC_DEMO_CASES[0]?.transcript || '');
+    return initialText ? translateToEnglishAndHindi(initialText).english : '';
+  });
+  const [isTranslating, setIsTranslating] = useState<boolean>(false);
 
-  // Real-time AI English translation of any spoken Indian language
-  const englishTranslation = useMemo(() => {
-    if (!transcript.trim()) return '';
-    if (analysis?.translations?.english) {
-      return analysis.translations.english;
+  // Continuous real-time translation: handles phone calls, scenario loading, manual typing, and mic dictation
+  useEffect(() => {
+    const text = transcript.trim();
+    if (!text) {
+      setLiveEnglishTranslation('');
+      return;
     }
-    const res = translateToEnglishAndHindi(transcript.trim(), languageHint);
-    return res.english;
-  }, [transcript, languageHint, analysis]);
+
+    // 1. Instant check for known emergency cases / scenarios (0ms lag)
+    const quick = translateToEnglishAndHindi(text, languageHint);
+    if (quick.confidence >= 0.94) {
+      setLiveEnglishTranslation(quick.english);
+      return;
+    }
+
+    // 2. Set clean heuristic translation immediately
+    setLiveEnglishTranslation(quick.english);
+
+    // 3. Asynchronously fetch live translation from Google Translate
+    let isCancelled = false;
+    setIsTranslating(true);
+    const timer = setTimeout(async () => {
+      try {
+        const live = await fetchLiveEnglishTranslation(text, languageHint);
+        if (!isCancelled && live && live.trim()) {
+          setLiveEnglishTranslation(live);
+        }
+      } catch (err) {
+        console.warn('Real-time translation error:', err);
+      } finally {
+        if (!isCancelled) setIsTranslating(false);
+      }
+    }, 300);
+
+    return () => {
+      isCancelled = true;
+      clearTimeout(timer);
+    };
+  }, [transcript, languageHint]);
 
   const handlePlayEnglish = () => {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
@@ -140,7 +176,9 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
       return;
     }
     window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(englishTranslation);
+    const textToSpeak = liveEnglishTranslation.trim();
+    if (!textToSpeak) return;
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
     utterance.lang = 'en-IN';
     utterance.rate = 0.95;
     utterance.onend = () => setIsPlayingEnglish(false);
@@ -150,8 +188,8 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
   };
 
   const handleCopyEnglish = () => {
-    if (!englishTranslation) return;
-    navigator.clipboard.writeText(englishTranslation);
+    if (!liveEnglishTranslation) return;
+    navigator.clipboard.writeText(liveEnglishTranslation);
     setCopiedEnglish(true);
     setTimeout(() => setCopiedEnglish(false), 2000);
   };
@@ -387,6 +425,8 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
     setAnalysis(null);
     setCurrentReview(null);
     setIsSimulatedCallActive(false);
+    setIsAdvisoryDismissed(false);
+    setLiveEnglishTranslation('');
   };
 
   const handleAnalyze = (e?: React.FormEvent) => {
@@ -398,6 +438,7 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
   // Callback when a simulated call is answered
   const handleCallAccepted = (callTranscript: string, langHint: string, callerLoc: string) => {
     setIsSimulatedCallActive(true);
+    setIsAdvisoryDismissed(false);
     setTranscript(callTranscript);
     setLanguageHint(langHint);
     setLocationHint(callerLoc);
@@ -415,6 +456,7 @@ export const NewIncidentPage: React.FC<NewIncidentPageProps> = ({
 
   const handleCallEnded = () => {
     setIsSimulatedCallActive(false);
+    setIsAdvisoryDismissed(true);
   };
 
   const handleSaveReview = async (review: HumanReviewUpdate) => {
@@ -456,7 +498,16 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
     <div className="p-3 sm:p-4 space-y-2.5 sm:space-y-3 max-w-7xl mx-auto animate-fadeIn transition-colors duration-200">
       {/* 1. Emergency Protocol Banner */}
       <EmergencyBanner
-        immediateDanger={analysis ? analysis.immediate_danger_flag : emergencyMeasurement.threatScore >= 80}
+        immediateDanger={
+          !isAdvisoryDismissed &&
+          isSimulatedCallActive &&
+          (analysis ? analysis.immediate_danger_flag : emergencyMeasurement.threatScore >= 80)
+        }
+        onDismiss={() => setIsAdvisoryDismissed(true)}
+        onEscalate={() => {
+          setIsAdvisoryDismissed(true);
+          alert('🚨 Emergency Escalation Triggered! Immediate field dispatch sent to local Police / PCR units.');
+        }}
       />
 
       {/* 2. Helpline Call Simulator & Ringtone Center */}
@@ -535,21 +586,16 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
                 <div className="p-1.5 rounded-lg bg-teal-50 dark:bg-teal-950 text-teal-600 dark:text-teal-400 border border-teal-200 dark:border-teal-800">
                   <Edit3 className="w-3.5 h-3.5" />
                 </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight leading-none">
-                    Caller Testimony & Live Conversation Feed
-                  </h3>
-                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
-                    Verbatim Audio Transcript (Any Indian Language)
-                  </span>
-                </div>
+                <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight leading-none">
+                  Caller Testimony & Live Conversation Feed
+                </h3>
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={isListening ? stopListening : startListening}
-                  className={`px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 shadow-2xs cursor-pointer ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 shadow-2xs cursor-pointer ${
                     isListening
                       ? 'bg-red-50 dark:bg-red-950 text-red-700 dark:text-red-300 border border-red-300 dark:border-red-800 animate-pulse'
                       : 'bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700'
@@ -569,9 +615,6 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
                     </>
                   )}
                 </button>
-                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-mono">
-                  {transcript.length} ch
-                </span>
               </div>
             </div>
 
@@ -603,8 +646,11 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
                   <Languages className="w-3.5 h-3.5" />
                 </div>
                 <div>
-                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight leading-none">
-                    Live AI English Translation
+                  <h3 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white tracking-tight leading-none flex items-center gap-1.5">
+                    <span>Live AI English Translation</span>
+                    {isTranslating && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-ping" title="Translating..."></span>
+                    )}
                   </h3>
                   <span className="text-[10px] font-semibold text-teal-700 dark:text-teal-400">
                     {analysis?.detected_language || languageHint} → English Triage
@@ -654,13 +700,13 @@ Services Decided: ${emergencyMeasurement.decisions.filter(d => d.status === 'REC
             </div>
 
             <div className="w-full h-24 sm:h-28 p-2.5 sm:p-3 rounded-xl border border-teal-200/80 dark:border-teal-900/80 bg-teal-50/40 dark:bg-teal-950/20 overflow-y-auto">
-              {englishTranslation ? (
+              {liveEnglishTranslation ? (
                 <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-100 leading-relaxed font-medium">
-                  "{englishTranslation}"
+                  "{liveEnglishTranslation}"
                 </p>
               ) : (
                 <p className="text-xs text-slate-400 dark:text-slate-500 italic">
-                  Live translation will appear here in real-time as caller speaks in Hindi, Hinglish, Marathi, Bengali, Tamil, etc...
+                  Live translation will appear here in real-time as caller speaks or when you type in Hindi, Hinglish, Marathi, Bengali, Tamil, etc...
                 </p>
               )}
             </div>
