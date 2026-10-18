@@ -1,25 +1,31 @@
 import React from 'react';
 import {
   ShieldAlert,
-  HeartHandshake,
   CheckCircle2,
   Lock,
   Layers,
   AlertTriangle
 } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 export const AboutPage: React.FC = () => {
   return (
     <div className="p-3.5 sm:p-6 md:p-8 space-y-5 sm:space-y-6 md:space-y-8 max-w-5xl mx-auto text-slate-800 animate-fadeIn">
       {/* Title */}
-      <div className="space-y-2 border-b border-slate-200 pb-4 sm:pb-5">
-        <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] sm:text-xs font-semibold bg-teal-50 text-teal-800 border border-teal-200">
-          <HeartHandshake className="w-3.5 h-3.5 text-teal-600 shrink-0" />
-          <span>Hackathon Social-Impact Innovation</span>
+      <div className="space-y-3 border-b border-slate-200 pb-4 sm:pb-5">
+        <div className="flex items-center gap-3.5">
+          <div className="w-14 h-14 rounded-2xl bg-white p-2 border border-slate-200 shadow-sm flex items-center justify-center shrink-0">
+            <img src={logoImg} alt="eSahaay Official Logo" className="w-full h-full object-contain" />
+          </div>
+          <div>
+            <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-teal-50 text-teal-800 border border-teal-200 mb-1">
+              <span>Listen • Triage • Support</span>
+            </div>
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
+              About eSahaay: Intelligent Helpline Triage
+            </h2>
+          </div>
         </div>
-        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold tracking-tight text-slate-900">
-          About eSahaay: Intelligent Helpline Triage
-        </h2>
         <p className="text-xs sm:text-sm text-slate-600 max-w-3xl leading-relaxed">
           An AI-powered decision-support assistant designed for women's safety helplines handling fragmented, high-stress complaints in Hindi, English, and Hinglish.
         </p>

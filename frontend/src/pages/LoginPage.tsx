@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { HeartHandshake, ShieldCheck, User, Lock, ArrowRight, Sparkles } from 'lucide-react';
+import { ShieldCheck, User, Lock, ArrowRight, Sparkles } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 export interface LoginPageProps {
   onLogin: (operatorId: string) => void;
@@ -30,14 +31,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ onLogin }) => {
       <div className="w-full max-w-md bg-slate-900/90 border border-slate-800 rounded-2xl p-6 sm:p-8 shadow-2xl shadow-black/60 backdrop-blur-sm animate-fadeIn relative z-10">
         {/* Brand Logo & Header */}
         <div className="text-center">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-sky-600 flex items-center justify-center text-white shadow-lg shadow-teal-950/50 mb-3.5 mx-auto">
-            <HeartHandshake className="w-8 h-8" />
+          <div className="w-24 h-24 rounded-2xl bg-white p-2.5 flex items-center justify-center shadow-xl shadow-teal-950/50 mb-3.5 mx-auto ring-4 ring-teal-500/20">
+            <img src={logoImg} alt="eSahaay Official Logo" className="w-full h-full object-contain" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">
             eSahaay
           </h1>
           <p className="text-sm text-slate-400 font-medium mt-1">
-            Intelligent Helpline Triage
+            Intelligent Helpline Triage • Listen Triage Support
           </p>
 
           <div className="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-800/90 text-teal-300 text-xs font-medium border border-teal-500/20">

@@ -2,10 +2,10 @@ import React from 'react';
 import {
   UserCheck,
   Menu,
-  HeartHandshake,
   Sun,
   Moon
 } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 interface HeaderProps {
   title: string;
@@ -39,8 +39,8 @@ export const Header: React.FC<HeaderProps> = ({
 
           <div className="min-w-0">
             <div className="flex items-center gap-2">
-              <div className="md:hidden w-6 h-6 rounded-lg bg-gradient-to-br from-teal-500 to-sky-600 flex items-center justify-center text-white shrink-0">
-                <HeartHandshake className="w-3.5 h-3.5" />
+              <div className="md:hidden w-7 h-7 rounded-lg bg-white p-0.5 flex items-center justify-center shadow-xs border border-slate-200 dark:border-slate-700 shrink-0">
+                <img src={logoImg} alt="eSahaay" className="w-full h-full object-contain" />
               </div>
               <h2 className="text-base sm:text-lg md:text-xl font-bold text-slate-900 dark:text-white tracking-tight truncate">
                 {title}

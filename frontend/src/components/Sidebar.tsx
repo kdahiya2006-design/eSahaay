@@ -4,11 +4,11 @@ import {
   ShieldAlert,
   History,
   BarChart3,
-  HeartHandshake,
   ChevronRight,
   Map,
   X
 } from 'lucide-react';
+import logoImg from '../assets/logo.png';
 
 export type NavTab = 'overview' | 'new-incident' | 'case-history' | 'evaluation' | 'dispatch-map';
 
@@ -110,15 +110,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {/* Brand Header */}
         <div className="p-4 sm:p-5 border-b border-slate-800/80 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-sky-600 flex items-center justify-center text-white shadow-md shadow-teal-950/40">
-              <HeartHandshake className="w-5 h-5" />
+            <div className="w-10 h-10 rounded-xl bg-white p-1 flex items-center justify-center shadow-md shadow-teal-950/40 shrink-0">
+              <img src={logoImg} alt="eSahaay Logo" className="w-full h-full object-contain" />
             </div>
             <div>
               <h1 className="text-lg font-bold text-white tracking-tight flex items-center gap-1.5 leading-none">
                 eSahaay
               </h1>
               <p className="text-xs text-slate-400 font-medium mt-1 leading-none">
-                Intelligent Helpline Triage
+                Listen • Triage • Support
               </p>
             </div>
           </div>
